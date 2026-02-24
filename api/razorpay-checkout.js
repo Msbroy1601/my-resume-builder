@@ -1,25 +1,32 @@
-import Razorpay from 'razorpay';
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID
+    const keySecret = process.env.RAZORPAY_KEY_SECRET
 
-    const order = await razorpay.orders.create({
-      amount: 9900, // ₹99 in paise (99 x 100)
-      currency: 'INR',
-      receipt: `receipt_${Date.now()}`,
-    });
+    const credentials = Buffer.from(`${keyId}:${keySecret}`).toString('base64')
 
-    return res.status(200).json(order);
+    const response = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: 9900,
+        currency: 'INR',
+        receipt: `receipt_${Date.now()}`,
+      }),
+    })
+
+    const order = await response.json()
+    return res.status(200).json(order)
+
   } catch (error) {
-    console.error('Razorpay order error:', error);
-    return res.status(500).json({ error: 'Failed to create order' });
+    console.error('Razorpay order error:', error)
+    return res.status(500).json({ error: 'Failed to create order' })
   }
 }
