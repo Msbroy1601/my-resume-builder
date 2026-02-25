@@ -130,7 +130,13 @@ function Builder() {
   // PDF Download function - THE NEW PART!
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+
   const handleDownload = () => {
+    setShowPaymentModal(true)
+  }
+
+  const actuallyDownload = () => {
     setShowPaymentModal(true)
   }
 
@@ -1378,6 +1384,7 @@ function Builder() {
         </div>
       </div>
     </div>
+  </>
   )
 }
 
