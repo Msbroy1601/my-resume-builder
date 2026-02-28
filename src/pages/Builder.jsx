@@ -223,49 +223,52 @@ function Builder() {
         </button>
 
         {/* Title */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">📥 Download Your Resume</h2>
-          <p className="text-gray-500 text-sm">One-time payment • No subscription</p>
+        <div className="text-center mb-5">
+          <div className="text-4xl mb-3">☕</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">This tool is completely free!</h2>
+          <p className="text-gray-600 text-base">If it helped you, buy me a coffee? 😊</p>
         </div>
 
-        {/* Amount */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 text-center mb-6 border border-blue-100">
-          <p className="text-4xl font-bold text-blue-700">₹99</p>
-          <p className="text-sm text-gray-600 mt-1">PDF Download</p>
+        {/* Coffee suggestion */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center mb-5">
+          <p className="text-amber-800 font-semibold text-sm">
+            💛 We recommend sending ₹99 or more
+          </p>
+          <p className="text-amber-600 text-xs mt-1">100% voluntary — totally up to you!</p>
         </div>
 
         {/* QR Code */}
         <div className="text-center mb-4">
           <p className="text-sm font-semibold text-gray-700 mb-3">
-            Scan QR code with any UPI app
+            Scan with any UPI app to tip
           </p>
           <div className="flex justify-center">
             <img
               src="/qr-code.jpg"
               alt="UPI QR Code"
-              className="w-48 h-48 object-contain border-2 border-gray-200 rounded-xl shadow-md"
+              className="w-44 h-44 object-contain border-2 border-gray-200 rounded-xl shadow-md"
             />
           </div>
         </div>
 
         {/* UPI ID */}
-        <div className="bg-gray-50 rounded-xl p-3 text-center mb-6 border border-gray-200">
+        <div className="bg-gray-50 rounded-xl p-3 text-center mb-5 border border-gray-200">
           <p className="text-xs text-gray-500 mb-1">UPI ID</p>
           <p className="text-base font-bold text-gray-900 select-all">baishaliroy11@ybl</p>
           <p className="text-xs text-gray-400 mt-1">PhonePe / GPay / Paytm / Any UPI app</p>
         </div>
 
-        {/* Confirm & Download button */}
+        {/* Download button */}
         <button
           onClick={triggerDownload}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center justify-center gap-2 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          {isDownloading ? '⏳ Generating PDF...' : "✅ I've Paid — Download PDF"}
+          {isDownloading ? '⏳ Generating PDF...' : '📥 Download My Resume'}
         </button>
 
         <p className="text-center text-xs text-gray-400 mt-3">
-          After paying ₹99, click the button above to download your PDF
+          No payment needed to download — but your support means a lot! 🙏
         </p>
       </div>
     </div>

@@ -19,19 +19,19 @@ function Home() {
 
   const features = [
     {
-      icon: '🎓',
-      title: 'Built for Students',
-      description: 'Templates designed for freshers and early-career professionals in India'
-    },
-    {
       icon: '⚡',
       title: 'Create in Minutes',
-      description: 'Simple step-by-step builder with live preview'
+      description: 'Simple step-by-step builder with live preview as you type'
     },
     {
-      icon: '💰',
-      title: 'Just ₹99 to Download',
-      description: 'One-time payment. No hidden fees. No subscriptions.'
+      icon: '🎨',
+      title: '8 Beautiful Templates',
+      description: 'Professional designs for every style and industry'
+    },
+    {
+      icon: '💸',
+      title: '100% Free',
+      description: 'Build and download your resume at no cost. Always.'
     },
     {
       icon: '📱',
@@ -43,19 +43,19 @@ function Home() {
   const faqs = [
     {
       question: 'Is Resume Builder really free?',
-      answer: 'Yes! Building and editing your resume is 100% free. You only pay ₹99 one-time when you want to download the final PDF. No subscriptions, no recurring charges.'
+      answer: 'Yes, completely! Building your resume and downloading the PDF is 100% free. No hidden fees, no subscriptions, no credit card required.'
     },
     {
-      question: 'Why should I pay ₹99?',
-      answer: 'Most resume builders charge ₹500-2000 or force monthly subscriptions. We charge just ₹99 once, and you can download your resume as many times as you want after payment.'
+      question: 'Then how do you keep this running?',
+      answer: 'This is a passion project! When you download your resume, we show a "buy me a coffee" prompt. If the tool helped you, a small voluntary tip of ₹99 or more keeps the lights on — but it\'s entirely optional.'
     },
     {
       question: 'Can I edit my resume after downloading?',
-      answer: 'Absolutely! Your resume is saved to your account. Come back anytime to make changes and download an updated version at no extra cost.'
+      answer: 'Absolutely! Your resume is saved to your browser. Come back anytime to make changes and download an updated version for free.'
     },
     {
-      question: 'What payment methods do you accept?',
-      answer: 'We accept all major payment methods via Razorpay: UPI, Cards, Net Banking, and Wallets. Safe and secure.'
+      question: 'What formats can I download?',
+      answer: 'You can download your resume as a PDF — the most widely accepted format for job applications.'
     }
   ]
 
@@ -118,28 +118,31 @@ function Home() {
 
       {/* Hero Section */}
       <section className="max-w-5xl mx-auto px-8 py-20 text-center">
+        <div className="inline-block bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+          🎉 100% Free — No credit card required
+        </div>
         <h2 className="text-5xl font-bold text-gray-900 mb-6">
-          Create a job-ready resume in minutes
+          100% Free — Build and download your resume
         </h2>
         <p className="text-2xl text-gray-600 mb-4">
-          Built for students and early-career professionals in India
+          Create a job-ready resume in minutes
         </p>
-        <p className="text-xl text-gray-700 mb-12 font-medium">
-          Free to build. Pay ₹99 to download PDF.
+        <p className="text-lg text-gray-500 mb-12">
+          Choose from 8 professional templates. Download as PDF. Completely free.
         </p>
-        
+
         <div className="flex items-center justify-center gap-4">
           <Link
             to={currentUser ? "/templates" : "/signup"}
             className="inline-block bg-blue-600 text-white px-10 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition"
           >
-            Start free
+            Build My Resume — Free
           </Link>
           <Link
             to="/templates"
             className="inline-block bg-white text-blue-600 px-10 py-4 rounded-lg text-lg font-bold hover:bg-gray-50 transition border-2 border-blue-600"
           >
-            View templates
+            View Templates
           </Link>
         </div>
       </section>
@@ -156,10 +159,10 @@ function Home() {
       <section className="bg-white py-16">
         <div className="max-w-6xl mx-auto px-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
-            Why Students Choose Us
+            Why People Choose Us
           </h2>
           <p className="text-lg text-gray-600 mb-12 text-center">
-            Simple, affordable, and designed for Indian job seekers
+            Simple, beautiful, and completely free
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -225,7 +228,7 @@ function Home() {
             Common Questions
           </h2>
           <p className="text-lg text-gray-600 mb-12 text-center">
-            Quick answers about pricing and features
+            Quick answers about the tool
           </p>
 
           <div className="space-y-4">
@@ -247,16 +250,16 @@ function Home() {
       <section className="bg-blue-600 py-16">
         <div className="max-w-3xl mx-auto px-8 text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Land Your First Job Faster
+            Your next job starts with a great resume
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of students who built their resume with us. Only ₹99 to download.
+            Build and download yours for free. No sign-up tricks, no hidden costs.
           </p>
           <Link
             to={currentUser ? "/templates" : "/signup"}
             className="inline-block bg-white text-blue-600 px-10 py-4 rounded-lg text-lg font-bold hover:bg-gray-100 transition"
           >
-            Build Your Resume Free →
+            Build My Resume Free →
           </Link>
         </div>
       </section>
