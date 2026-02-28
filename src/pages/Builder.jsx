@@ -9,21 +9,21 @@ function Builder() {
   const { user } = useUser()
   const { signOut } = useClerk()
   const currentUser = user
-  
+
   // Get user's display name
   const displayName = currentUser?.firstName || currentUser?.fullName || 'there'
-  
+
   // Get template from URL or default to 'modern'
   const [selectedTemplate, setSelectedTemplate] = useState(
     searchParams.get('template') || 'modern'
   )
-  
+
   // Personal info state
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [summary, setSummary] = useState('')
-  
+
   // Work experience state
   const [workExperiences, setWorkExperiences] = useState([])
   const [currentWork, setCurrentWork] = useState({
@@ -47,6 +47,9 @@ function Builder() {
 
   // PDF download state
   const [isDownloading, setIsDownloading] = useState(false)
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -127,75 +130,6 @@ function Builder() {
     setEducationList(educationList.filter((_, i) => i !== index))
   }
 
-  // PDF Download function - THE NEW PART!
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-
-  const handleDownload = () => {
-    setShowPaymentModal(true)
-  }
-
-  const actuallyDownload = () => {
-    setShowPaymentModal(true)
-  }
-
-  const handlePaid = () => {
-    setShowPaymentModal(false)
-    actuallyDownload()
-  }
-
-  const actuallyDownload = () => {
-    setIsDownloading(true)
-    
-    // Get the resume preview element
-    const element = document.getElementById('resume-preview')
-    
-    if (!element) {
-      alert('❌ Could not find resume preview')
-      setIsDownloading(false)
-      return
-    }
-    
-    // Generate filename
-    const userName = name || 'Resume'
-    const templateName = selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)
-    const filename = `Resume_${userName.replace(/\s+/g, '_')}_${templateName}.pdf`
-    
-    // PDF options
-    const opt = {
-      margin: 10,
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        letterRendering: true,
-        logging: false
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait' 
-      },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    }
-    
-    // Generate PDF
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .then(() => {
-        setIsDownloading(false)
-      })
-      .catch((error) => {
-        setIsDownloading(false)
-        console.error('PDF generation error:', error)
-        alert('❌ Error generating PDF. Please try again.')
-      })
-  }
-
   // Clear all data
   const handleClearAll = () => {
     if (window.confirm('Are you sure you want to clear all data? This cannot be undone.')) {
@@ -221,12 +155,128 @@ function Builder() {
       localStorage.removeItem('resumeData')
     }
   }
-  // MODERN TEMPLATE
+
+  // Show payment modal when user clicks Download PDF
+  const handleDownloadClick = () => {
+    setShowPaymentModal(true)
+  }
+
+  // Actual PDF generation — called after user confirms payment
+  const triggerDownload = () => {
+    setIsDownloading(true)
+    setShowPaymentModal(false)
+
+    const element = document.getElementById('resume-preview')
+
+    if (!element) {
+      alert('❌ Could not find resume preview')
+      setIsDownloading(false)
+      return
+    }
+
+    const userName = name || 'Resume'
+    const templateName = selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)
+    const filename = `Resume_${userName.replace(/\s+/g, '_')}_${templateName}.pdf`
+
+    const opt = {
+      margin: 10,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        logging: false
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    }
+
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        setIsDownloading(false)
+      })
+      .catch((error) => {
+        setIsDownloading(false)
+        console.error('PDF generation error:', error)
+        alert('❌ Error generating PDF. Please try again.')
+      })
+  }
+
+  // ─── UPI PAYMENT MODAL ────────────────────────────────────────────────────
+  const PaymentModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 relative">
+        {/* Close button */}
+        <button
+          onClick={() => setShowPaymentModal(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold leading-none"
+        >
+          ×
+        </button>
+
+        {/* Title */}
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">📥 Download Your Resume</h2>
+          <p className="text-gray-500 text-sm">One-time payment • No subscription</p>
+        </div>
+
+        {/* Amount */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 text-center mb-6 border border-blue-100">
+          <p className="text-4xl font-bold text-blue-700">₹99</p>
+          <p className="text-sm text-gray-600 mt-1">PDF Download</p>
+        </div>
+
+        {/* QR Code */}
+        <div className="text-center mb-4">
+          <p className="text-sm font-semibold text-gray-700 mb-3">
+            Scan QR code with any UPI app
+          </p>
+          <div className="flex justify-center">
+            <img
+              src="/qr-code.jpg"
+              alt="UPI QR Code"
+              className="w-48 h-48 object-contain border-2 border-gray-200 rounded-xl shadow-md"
+            />
+          </div>
+        </div>
+
+        {/* UPI ID */}
+        <div className="bg-gray-50 rounded-xl p-3 text-center mb-6 border border-gray-200">
+          <p className="text-xs text-gray-500 mb-1">UPI ID</p>
+          <p className="text-base font-bold text-gray-900 select-all">baishaliroy11@ybl</p>
+          <p className="text-xs text-gray-400 mt-1">PhonePe / GPay / Paytm / Any UPI app</p>
+        </div>
+
+        {/* Confirm & Download button */}
+        <button
+          onClick={triggerDownload}
+          disabled={isDownloading}
+          className={`w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center justify-center gap-2 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isDownloading ? '⏳ Generating PDF...' : "✅ I've Paid — Download PDF"}
+        </button>
+
+        <p className="text-center text-xs text-gray-400 mt-3">
+          After paying ₹99, click the button above to download your PDF
+        </p>
+      </div>
+    </div>
+  )
+
+  // ─── MODERN TEMPLATE ──────────────────────────────────────────────────────
   const ModernTemplate = () => (
     <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -238,7 +288,7 @@ function Builder() {
         <h2 className="text-xl font-bold mb-8 text-gray-900 flex items-center">
           <span className="mr-2">👁️</span> Live Preview - Modern
         </h2>
-        
+
         <div className="mb-8 pb-8 border-b-2 border-gray-200">
           <h3 className="text-4xl font-bold text-gray-900 mb-3 leading-tight tracking-tight">
             {name || 'Your Name'}
@@ -303,7 +353,7 @@ function Builder() {
             <div className="flex flex-wrap gap-3">
               {skills.split(',').map((skill, index) => (
                 skill.trim() && (
-                  <span 
+                  <span
                     key={index}
                     className="px-5 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-900 rounded-full text-base font-semibold border-2 border-blue-200"
                   >
@@ -318,12 +368,12 @@ function Builder() {
     </div>
   )
 
-  // CLASSIC TEMPLATE
+  // ─── CLASSIC TEMPLATE ─────────────────────────────────────────────────────
   const ClassicTemplate = () => (
     <div className="p-10 bg-white shadow-xl border-4 border-gray-900">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gray-900 text-white py-4 px-6 font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center border-2 border-gray-900 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -335,7 +385,7 @@ function Builder() {
         <h2 className="text-xl font-bold mb-8 text-gray-900 text-center uppercase tracking-wider">
           Live Preview - Classic
         </h2>
-        
+
         <div className="mb-10 text-center">
           <h3 className="text-5xl font-bold text-gray-900 mb-3 uppercase tracking-tight">
             {name || 'Your Name'}
@@ -407,12 +457,12 @@ function Builder() {
     </div>
   )
 
-  // MINIMAL TEMPLATE
+  // ─── MINIMAL TEMPLATE ─────────────────────────────────────────────────────
   const MinimalTemplate = () => (
     <div className="p-12 bg-white">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-black text-white py-4 px-6 font-medium text-lg hover:bg-gray-800 transition flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -424,7 +474,7 @@ function Builder() {
         <h2 className="text-lg font-medium mb-10 text-gray-900 text-center tracking-wide">
           Live Preview - Minimal
         </h2>
-        
+
         <div className="mb-12">
           <h3 className="text-6xl font-light text-gray-900 mb-4 tracking-tight">
             {name || 'Your Name'}
@@ -489,10 +539,7 @@ function Builder() {
             <div className="flex flex-wrap gap-4">
               {skills.split(',').map((skill, index) => (
                 skill.trim() && (
-                  <span 
-                    key={index}
-                    className="text-base text-gray-700 font-light"
-                  >
+                  <span key={index} className="text-base text-gray-700 font-light">
                     {skill.trim()}
                   </span>
                 )
@@ -504,12 +551,12 @@ function Builder() {
     </div>
   )
 
-  // CREATIVE TEMPLATE
+  // ─── CREATIVE TEMPLATE ────────────────────────────────────────────────────
   const CreativeTemplate = () => (
     <div className="p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-xl shadow-2xl border-4 border-purple-300">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-xl flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -521,8 +568,8 @@ function Builder() {
         <h2 className="text-xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 flex items-center">
           <span className="mr-2">✨</span> Live Preview - Creative
         </h2>
-        
-        <div className="mb-8 pb-8 border-b-2 border-gradient-to-r from-purple-200 to-pink-200">
+
+        <div className="mb-8 pb-8 border-b-2 border-purple-200">
           <h3 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 mb-4 leading-tight">
             {name || 'Your Name'}
           </h3>
@@ -590,7 +637,7 @@ function Builder() {
             <div className="flex flex-wrap gap-3">
               {skills.split(',').map((skill, index) => (
                 skill.trim() && (
-                  <span 
+                  <span
                     key={index}
                     className="px-5 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-base font-bold shadow-lg hover:scale-105 transition-transform"
                   >
@@ -604,12 +651,13 @@ function Builder() {
       </div>
     </div>
   )
-  // PROFESSIONAL TEMPLATE
+
+  // ─── PROFESSIONAL TEMPLATE ────────────────────────────────────────────────
   const ProfessionalTemplate = () => (
     <div className="p-10 bg-white shadow-2xl border-l-8 border-blue-600">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -621,7 +669,7 @@ function Builder() {
         <h2 className="text-xl font-bold mb-8 text-blue-600 uppercase tracking-wider text-center">
           Live Preview - Professional
         </h2>
-        
+
         <div className="mb-10 pb-6 border-b-2 border-gray-300">
           <h3 className="text-4xl font-bold text-gray-900 mb-3 uppercase tracking-tight">
             {name || 'Your Name'}
@@ -642,7 +690,7 @@ function Builder() {
         {summary && (
           <div className="mb-10 pb-6 border-b-2 border-gray-300">
             <h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide flex items-center">
-              <span className="w-2 h-8 bg-blue-600 mr-3"></span>
+              <span className="w-2 h-8 bg-blue-600 mr-3 inline-block"></span>
               Professional Summary
             </h3>
             <p className="text-base text-gray-800 leading-relaxed ml-5">{summary}</p>
@@ -652,7 +700,7 @@ function Builder() {
         {workExperiences.length > 0 && (
           <div className="mb-10 pb-6 border-b-2 border-gray-300">
             <h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide flex items-center">
-              <span className="w-2 h-8 bg-blue-600 mr-3"></span>
+              <span className="w-2 h-8 bg-blue-600 mr-3 inline-block"></span>
               Professional Experience
             </h3>
             <div className="space-y-6 ml-5">
@@ -677,7 +725,7 @@ function Builder() {
         {educationList.length > 0 && (
           <div className="mb-10 pb-6 border-b-2 border-gray-300">
             <h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide flex items-center">
-              <span className="w-2 h-8 bg-blue-600 mr-3"></span>
+              <span className="w-2 h-8 bg-blue-600 mr-3 inline-block"></span>
               Education
             </h3>
             <div className="space-y-5 ml-5">
@@ -695,17 +743,14 @@ function Builder() {
         {skills && (
           <div className="mb-6">
             <h3 className="text-lg font-bold text-blue-600 mb-5 uppercase tracking-wide flex items-center">
-              <span className="w-2 h-8 bg-blue-600 mr-3"></span>
+              <span className="w-2 h-8 bg-blue-600 mr-3 inline-block"></span>
               Core Competencies
             </h3>
             <div className="grid grid-cols-2 gap-3 ml-5">
               {skills.split(',').map((skill, index) => (
                 skill.trim() && (
-                  <div 
-                    key={index}
-                    className="flex items-center text-base text-gray-800"
-                  >
-                    <span className="w-2 h-2 bg-blue-600 rounded-full mr-3"></span>
+                  <div key={index} className="flex items-center text-base text-gray-800">
+                    <span className="w-2 h-2 bg-blue-600 rounded-full mr-3 inline-block"></span>
                     {skill.trim()}
                   </div>
                 )
@@ -717,12 +762,12 @@ function Builder() {
     </div>
   )
 
-  // SIDEBAR TEMPLATE
+  // ─── SIDEBAR TEMPLATE ─────────────────────────────────────────────────────
   const SidebarTemplate = () => (
     <div className="bg-white shadow-2xl overflow-hidden">
       <div className="mb-6 p-8 pb-0">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-green-700 hover:to-teal-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -736,7 +781,7 @@ function Builder() {
           <h2 className="text-lg font-bold mb-8 text-center border-b-2 border-white pb-2">
             Live Preview - Sidebar
           </h2>
-          
+
           {/* Contact Info */}
           <div className="mb-8">
             <h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">
@@ -764,7 +809,7 @@ function Builder() {
                 {skills.split(',').map((skill, index) => (
                   skill.trim() && (
                     <div key={index} className="flex items-center text-sm">
-                      <span className="w-2 h-2 bg-green-300 rounded-full mr-2"></span>
+                      <span className="w-2 h-2 bg-green-300 rounded-full mr-2 inline-block"></span>
                       <span>{skill.trim()}</span>
                     </div>
                   )
@@ -839,12 +884,12 @@ function Builder() {
     </div>
   )
 
-  // ELEGANT TEMPLATE
+  // ─── ELEGANT TEMPLATE ─────────────────────────────────────────────────────
   const ElegantTemplate = () => (
     <div className="p-10 bg-gradient-to-br from-rose-50 to-orange-50 shadow-2xl">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-rose-600 to-orange-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-rose-700 hover:to-orange-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -856,7 +901,7 @@ function Builder() {
         <h2 className="text-xl font-bold mb-8 text-rose-600 text-center italic">
           Live Preview - Elegant
         </h2>
-        
+
         <div className="text-center mb-10 pb-8 border-b-2 border-rose-200">
           <h3 className="text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">
             {name || 'Your Name'}
@@ -926,7 +971,7 @@ function Builder() {
             <div className="flex flex-wrap gap-3 justify-center">
               {skills.split(',').map((skill, index) => (
                 skill.trim() && (
-                  <span 
+                  <span
                     key={index}
                     className="px-5 py-2 bg-gradient-to-r from-rose-100 to-orange-100 text-rose-800 rounded-full text-base font-medium italic border border-rose-200"
                   >
@@ -941,12 +986,12 @@ function Builder() {
     </div>
   )
 
-  // TECH TEMPLATE
+  // ─── TECH TEMPLATE ────────────────────────────────────────────────────────
   const TechTemplate = () => (
     <div className="p-8 bg-gray-900 shadow-2xl">
       <div className="mb-6">
         <button
-          onClick={handleDownload}
+          onClick={handleDownloadClick}
           disabled={isDownloading}
           className={`w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-violet-700 hover:to-purple-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -958,7 +1003,7 @@ function Builder() {
         <h2 className="text-xl font-bold mb-8 text-violet-600 flex items-center">
           <span className="mr-2">💻</span> Live Preview - Tech
         </h2>
-        
+
         <div className="mb-8 pb-8 border-b-2 border-violet-200">
           <h3 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 mb-3 leading-tight">
             {name || 'Your Name'}
@@ -1035,7 +1080,7 @@ function Builder() {
             <div className="flex flex-wrap gap-3">
               {skills.split(',').map((skill, index) => (
                 skill.trim() && (
-                  <span 
+                  <span
                     key={index}
                     className="px-5 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-md text-base font-bold font-mono shadow-md hover:scale-105 transition-transform"
                   >
@@ -1050,9 +1095,12 @@ function Builder() {
     </div>
   )
 
+  // ─── MAIN RENDER ──────────────────────────────────────────────────────────
   return (
-    {showPaymentModal && <UPIPaymentModal onClose={() => setShowPaymentModal(false)} onPaid={handlePaid} />}
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* UPI Payment Modal */}
+      {showPaymentModal && <PaymentModal />}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-8 py-6">
@@ -1100,20 +1148,19 @@ function Builder() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* LEFT SIDE - FORM */}
+
+          {/* ── LEFT SIDE: FORM ── */}
           <div className="space-y-6">
-            {/* Personal Information Section */}
+
+            {/* Personal Information */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
               <h2 className="text-2xl font-bold mb-5 text-gray-800 flex items-center">
                 <span className="mr-2">👤</span> Personal Information
               </h2>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Full Name
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Full Name</label>
+                  <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -1121,12 +1168,9 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Email
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Email</label>
+                  <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -1134,12 +1178,9 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Phone
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Phone</label>
+                  <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -1150,17 +1191,16 @@ function Builder() {
               </div>
             </div>
 
-            {/* Professional Summary Section */}
+            {/* Professional Summary */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
               <h2 className="text-2xl font-bold mb-5 text-gray-800 flex items-center">
                 <span className="mr-2">📝</span> Professional Summary
               </h2>
-              
               <div>
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
                   About You (2-3 sentences)
                 </label>
-                <textarea 
+                <textarea
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
                   placeholder="e.g. Recent computer science graduate with strong programming skills..."
@@ -1171,18 +1211,15 @@ function Builder() {
               </div>
             </div>
 
-            {/* Work Experience Section */}
+            {/* Work Experience */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
               <h2 className="text-2xl font-bold mb-5 text-gray-800 flex items-center">
                 <span className="mr-2">💼</span> Work Experience
               </h2>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Company Name
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Company Name</label>
+                  <input
                     type="text"
                     value={currentWork.company}
                     onChange={(e) => setCurrentWork({...currentWork, company: e.target.value})}
@@ -1190,12 +1227,9 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Job Title
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Job Title</label>
+                  <input
                     type="text"
                     value={currentWork.jobTitle}
                     onChange={(e) => setCurrentWork({...currentWork, jobTitle: e.target.value})}
@@ -1203,13 +1237,10 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">
-                      Start Date
-                    </label>
-                    <input 
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">Start Date</label>
+                    <input
                       type="text"
                       value={currentWork.startDate}
                       onChange={(e) => setCurrentWork({...currentWork, startDate: e.target.value})}
@@ -1218,10 +1249,8 @@ function Builder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">
-                      End Date
-                    </label>
-                    <input 
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">End Date</label>
+                    <input
                       type="text"
                       value={currentWork.endDate}
                       onChange={(e) => setCurrentWork({...currentWork, endDate: e.target.value})}
@@ -1230,12 +1259,9 @@ function Builder() {
                     />
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Description
-                  </label>
-                  <textarea 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Description</label>
+                  <textarea
                     value={currentWork.description}
                     onChange={(e) => setCurrentWork({...currentWork, description: e.target.value})}
                     placeholder="Describe your responsibilities and achievements..."
@@ -1243,7 +1269,6 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <button
                   onClick={addWorkExperience}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-md"
@@ -1273,18 +1298,15 @@ function Builder() {
               </div>
             </div>
 
-            {/* Education Section */}
+            {/* Education */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
               <h2 className="text-2xl font-bold mb-5 text-gray-800 flex items-center">
                 <span className="mr-2">🎓</span> Education
               </h2>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    School Name
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">School Name</label>
+                  <input
                     type="text"
                     value={currentEducation.school}
                     onChange={(e) => setCurrentEducation({...currentEducation, school: e.target.value})}
@@ -1292,12 +1314,9 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Degree
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Degree</label>
+                  <input
                     type="text"
                     value={currentEducation.degree}
                     onChange={(e) => setCurrentEducation({...currentEducation, degree: e.target.value})}
@@ -1305,12 +1324,9 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">
-                    Graduation Year
-                  </label>
-                  <input 
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Graduation Year</label>
+                  <input
                     type="text"
                     value={currentEducation.gradYear}
                     onChange={(e) => setCurrentEducation({...currentEducation, gradYear: e.target.value})}
@@ -1318,7 +1334,6 @@ function Builder() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-
                 <button
                   onClick={addEducation}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-md"
@@ -1348,17 +1363,16 @@ function Builder() {
               </div>
             </div>
 
-            {/* Skills Section */}
+            {/* Skills */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
               <h2 className="text-2xl font-bold mb-5 text-gray-800 flex items-center">
                 <span className="mr-2">⚡</span> Skills
               </h2>
-              
               <div>
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
                   Your Skills (separate with commas)
                 </label>
-                <textarea 
+                <textarea
                   value={skills}
                   onChange={(e) => setSkills(e.target.value)}
                   placeholder="e.g. JavaScript, React, Python, Java, SQL"
@@ -1370,7 +1384,7 @@ function Builder() {
             </div>
           </div>
 
-          {/* RIGHT SIDE - TEMPLATE PREVIEW */}
+          {/* ── RIGHT SIDE: TEMPLATE PREVIEW ── */}
           <div className="lg:sticky lg:top-8 h-fit">
             {selectedTemplate === 'modern' && <ModernTemplate />}
             {selectedTemplate === 'classic' && <ClassicTemplate />}
@@ -1381,10 +1395,10 @@ function Builder() {
             {selectedTemplate === 'elegant' && <ElegantTemplate />}
             {selectedTemplate === 'tech' && <TechTemplate />}
           </div>
+
         </div>
       </div>
     </div>
-  </>
   )
 }
 
