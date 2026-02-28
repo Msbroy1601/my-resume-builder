@@ -1,9 +1,9 @@
 function TrustBadges() {
   const badges = [
     {
-      icon: "🔒",
-      title: "No subscription traps",
-      description: "Pay once, download anytime"
+      icon: "🎉",
+      title: "Completely free",
+      description: "Build and download at no cost"
     },
     {
       icon: "✓",

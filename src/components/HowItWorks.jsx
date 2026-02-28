@@ -12,8 +12,8 @@ function HowItWorks() {
     },
     {
       number: "3",
-      title: "Download for ₹99",
-      description: "One-time payment, yours forever"
+      title: "Download for free",
+      description: "100% free — yours to keep forever"
     }
   ];
 
