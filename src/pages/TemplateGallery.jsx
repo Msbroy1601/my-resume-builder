@@ -1,159 +1,64 @@
 import { useNavigate } from 'react-router-dom'
-import { useUser, useClerk } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
 
-function TemplateGallery() {
+const TEMPLATES = [
+  { id: 'modern',       name: 'Modern',        emoji: '🔵', desc: 'Clean blue header, dot skills',        badge: 'Popular' },
+  { id: 'classic',      name: 'Classic',        emoji: '⚫', desc: 'Traditional black & white',           badge: '' },
+  { id: 'minimal',      name: 'Minimal',        emoji: '⚪', desc: 'Ultra-clean, lots of whitespace',     badge: '' },
+  { id: 'creative',     name: 'Creative',       emoji: '🟣', desc: 'Purple gradient, bold style',         badge: '' },
+  { id: 'professional', name: 'Professional',   emoji: '🔷', desc: 'Corporate blue, structured layout',   badge: 'ATS Friendly' },
+  { id: 'sidebar',      name: 'Sidebar',        emoji: '🟢', desc: 'Green sidebar, photo support',        badge: '📷 Photo' },
+  { id: 'elegant',      name: 'Elegant',        emoji: '🌸', desc: 'Rose serif, refined and stylish',     badge: '' },
+  { id: 'tech',         name: 'Tech',           emoji: '💻', desc: 'Dark code-inspired, for developers',  badge: 'For Devs' },
+  { id: 'greensidebar', name: 'Green Sidebar',  emoji: '🌿', desc: 'Dark green sidebar, modern feel',     badge: '📷 Photo' },
+  { id: 'goldheader',   name: 'Gold Header',    emoji: '🥇', desc: 'Amber gradient header, premium look', badge: '📷 Photo' },
+  { id: 'classicserif', name: 'Classic Serif',  emoji: '📜', desc: 'Serif font, timeless elegance',       badge: '📷 Photo' },
+  { id: 'coral',        name: 'Coral',          emoji: '🪸', desc: 'Warm coral accents, modern layout',   badge: '📷 Photo' },
+  { id: 'amber',        name: 'Amber',          emoji: '🟡', desc: 'Golden header, progress bar skills',  badge: '📷 Photo' },
+  { id: 'serif2',       name: 'Formal Serif',   emoji: '🎓', desc: 'Small-caps headers, photo top-left',  badge: '📷 Photo' },
+  { id: 'hexagon',      name: 'Hexagon',        emoji: '🔷', desc: 'Salmon hexagon monogram, dot skills', badge: '' },
+  { id: 'navy',         name: 'Navy Icons',     emoji: '🏛', desc: 'Navy section badges, square photo',   badge: '📷 Photo' },
+  { id: 'bluesidebar',  name: 'Blue Sidebar',   emoji: '🩵', desc: 'Bright blue sidebar, pill skills',    badge: '📷 Photo' },
+]
+
+export default function TemplateGallery() {
   const navigate = useNavigate()
-  const { user } = useUser()
-  const { signOut } = useClerk()
-  const currentUser = user
-  const displayName = currentUser?.firstName || currentUser?.fullName || 'there'
+  const { isSignedIn } = useUser()
 
-  const templates = [
-    {
-      id: 'modern',
-      name: 'Modern',
-      emoji: '🚀',
-      description: 'Clean & professional',
-      color: 'from-blue-500 to-indigo-500',
-      recommended: true
-    },
-    {
-      id: 'classic',
-      name: 'Classic',
-      emoji: '📄',
-      description: 'Traditional & formal',
-      color: 'from-gray-700 to-gray-900',
-      recommended: true
-    },
-    {
-      id: 'minimal',
-      name: 'Minimal',
-      emoji: '✨',
-      description: 'Simple & elegant',
-      color: 'from-gray-400 to-gray-600',
-      recommended: true
-    },
-    {
-      id: 'creative',
-      name: 'Creative',
-      emoji: '🎨',
-      description: 'Bold & colorful',
-      color: 'from-purple-500 to-pink-500',
-      recommended: false
-    },
-    {
-      id: 'professional',
-      name: 'Professional',
-      emoji: '💼',
-      description: 'Corporate blue',
-      color: 'from-blue-600 to-cyan-600',
-      recommended: false
-    },
-    {
-      id: 'sidebar',
-      name: 'Sidebar',
-      emoji: '📊',
-      description: 'Two-column layout',
-      color: 'from-green-500 to-teal-500',
-      recommended: false
-    },
-    {
-      id: 'elegant',
-      name: 'Elegant',
-      emoji: '👔',
-      description: 'Sophisticated style',
-      color: 'from-rose-500 to-orange-500',
-      recommended: false
-    },
-    {
-      id: 'tech',
-      name: 'Tech',
-      emoji: '💻',
-      description: 'Modern tech industry',
-      color: 'from-violet-500 to-purple-500',
-      recommended: false
-    }
-  ]
-
-  // Sort templates: recommended first
-  const sortedTemplates = [...templates].sort((a, b) => {
-    if (a.recommended && !b.recommended) return -1
-    if (!a.recommended && b.recommended) return 1
-    return 0
-  })
-
-  const handleTemplateSelect = (templateId) => {
+  const handleSelect = (templateId) => {
+    if (!isSignedIn) { navigate('/login'); return }
     navigate(`/builder?template=${templateId}`)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Resume Builder</h1>
-              <p className="text-sm text-gray-600 mt-1">Choose your template</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-gray-700">Hi, {displayName}!</span>
-              <button
-                onClick={() => navigate('/')}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold"
-              >
-                ← Home
-              </button>
-              <button
-                onClick={() => {
-                  signOut()
-                  navigate('/')
-                }}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition"
-              >
-                Log Out
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Choose Your Template</h1>
+          <p className="text-lg text-gray-600">17 professionally designed templates — pick the one that fits your style</p>
         </div>
-      </header>
-
-      {/* Template Grid */}
-      <div className="max-w-7xl mx-auto px-8 py-12">
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Select a Template
-          </h2>
-          <p className="text-lg text-gray-600">
-            Pick a template. You can change it later.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-4 gap-6">
-          {sortedTemplates.map((template) => (
-            <button
-              key={template.id}
-              onClick={() => handleTemplateSelect(template.id)}
-              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all transform hover:scale-105 p-6 text-center border-2 border-transparent hover:border-blue-500 relative"
-            >
-              {/* Recommended Badge */}
-              {template.recommended && (
-                <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Recommended
-                </div>
-              )}
-              
-              <div className={`w-full h-48 bg-gradient-to-br ${template.color} rounded-lg mb-4 flex items-center justify-center text-6xl`}>
-                {template.emoji}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          {TEMPLATES.map(t => (
+            <div key={t.id} onClick={() => handleSelect(t.id)}
+              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer border-2 border-transparent hover:border-blue-400 group overflow-hidden">
+              <div className="h-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">
+                {t.emoji}
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{template.name}</h3>
-              <p className="text-sm text-gray-600">{template.description}</p>
-            </button>
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-bold text-gray-900 text-sm">{t.name}</h3>
+                  {t.badge && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{t.badge}</span>}
+                </div>
+                <p className="text-xs text-gray-500 leading-snug">{t.desc}</p>
+                <button className="mt-3 w-full bg-blue-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-blue-700 transition">
+                  Use This Template
+                </button>
+              </div>
+            </div>
           ))}
         </div>
+        <p className="text-center text-sm text-gray-500 mt-8">All templates are free to use. More coming soon!</p>
       </div>
     </div>
   )
 }
-
-export default TemplateGallery
