@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, AuthenticateWithRedirectCallback } from "@clerk/clerk-react"
 import Home from './pages/Home'
 import TemplateGallery from './pages/TemplateGallery'
 import Builder from './pages/Builder'
@@ -19,7 +19,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/signup/sso-callback" element={<div className="min-h-screen flex items-center justify-center"><p>Signing you in...</p></div>} />
+      <Route path="/signup/sso-callback" element={<AuthenticateWithRedirectCallback />} />
       
       {/* Clerk's built-in auth pages */}
       <Route 
