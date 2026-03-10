@@ -19,6 +19,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/signup/sso-callback" element={<div className="min-h-screen flex items-center justify-center"><p>Signing you in...</p></div>} />
       
       {/* Clerk's built-in auth pages */}
       <Route 
