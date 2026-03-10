@@ -1410,6 +1410,11 @@ function Builder() {
   // Generate summary using Claude API
   const generateSummary = async () => {
     if (!name.trim()) { setNameError('Please enter your name first'); return }
+    const hasData = workExperiences.length > 0 || educationList.length > 0 || skillsList.length > 0
+    if (!hasData) {
+      alert('Please fill in at least your work experience, education, or skills before generating a summary.')
+      return
+    }
     setIsGeneratingSummary(true)
     try {
       const cvData = {
@@ -1417,15 +1422,16 @@ function Builder() {
         education: educationList.map(e => `${e.degree} from ${e.school}`).join(', '),
         skills: skillsList.map(s => s.name).join(', '), certifications: certifications.map(c => c.name).join(', ')
       }
-      const prompt = `Write a concise, powerful 2-3 sentence professional summary for a resume. The person's name is ${cvData.name}. ${cvData.roles ? `They have worked as: ${cvData.roles}.` : ''} ${cvData.education ? `Education: ${cvData.education}.` : ''} ${cvData.skills ? `Key skills: ${cvData.skills}.` : ''} ${cvData.certifications ? `Certifications: ${cvData.certifications}.` : ''} Write in first-person style starting with a strong descriptor. Keep it under 60 words. No bullet points. Professional tone suitable for Indian job market.`
+      const prompt = `Write a concise, powerful 2-3 sentence professional summary for a resume. The person's name is ${cvData.name}. ${cvData.roles ? `They have worked as: ${cvData.roles}.` : ''} ${cvData.education ? `Education: ${cvData.education}.` : ''} ${cvData.skills ? `Key skills: ${cvData.skills}.` : ''} ${cvData.certifications ? `Certifications: ${cvData.certifications}.` : ''} Write in first-person style starting with a strong descriptor. Keep it under 60 words. No bullet points, no markdown, no headers. Plain text only. Professional tone suitable for Indian job market.`
       const response = await fetch("/api/generate-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt })
       })
       const data = await response.json()
-      const text = data.text || ''
-      if (text) setSummary(text.trim())
+      let text = data.text || ''
+      text = text.replace(/^#+\s*/gm, '').replace(/\*\*/g, '').replace(/\*/g, '').trim()
+      if (text) setSummary(text)
       else if (data.error) console.error('Summary error:', data.error)
     } catch(e) { console.error(e) }
     setIsGeneratingSummary(false)
@@ -1507,12 +1513,12 @@ function Builder() {
     const element = document.getElementById('resume-preview')
     if (!element) { alert('❌ Could not find resume preview'); setIsDownloading(false); return }
     const opt = {
-      margin: 10,
+      margin: [8, 8, 8, 8],
       filename: `Resume_${(name || 'Resume').replace(/\s+/g, '_')}_${selectedTemplate}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak: { mode: ['css', 'legacy'] }
     }
     html2pdf().set(opt).from(element).save()
       .then(() => setIsDownloading(false))
