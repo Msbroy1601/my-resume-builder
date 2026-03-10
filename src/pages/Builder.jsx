@@ -1422,7 +1422,12 @@ function Builder() {
         education: educationList.map(e => `${e.degree} from ${e.school}`).join(', '),
         skills: skillsList.map(s => s.name).join(', '), certifications: certifications.map(c => c.name).join(', ')
       }
-      const prompt = `Write a concise, powerful 2-3 sentence professional summary for a resume. The person's name is ${cvData.name}. ${cvData.roles ? `They have worked as: ${cvData.roles}.` : ''} ${cvData.education ? `Education: ${cvData.education}.` : ''} ${cvData.skills ? `Key skills: ${cvData.skills}.` : ''} ${cvData.certifications ? `Certifications: ${cvData.certifications}.` : ''} Write in first-person style starting with a strong descriptor. Keep it under 60 words. No bullet points, no markdown, no headers. Plain text only. Professional tone suitable for Indian job market.`
+      const totalYears = workExperiences.reduce((acc, exp) => {
+        const start = exp.startYear ? parseInt(exp.startYear) : 0
+        const end = exp.isPresent ? new Date().getFullYear() : (exp.endYear ? parseInt(exp.endYear) : start)
+        return acc + Math.max(0, end - start)
+      }, 0)
+      const prompt = `Write a concise, powerful 2-3 sentence professional summary for a resume. The person's name is ${cvData.name}. ${totalYears > 0 ? `They have exactly ${totalYears} year${totalYears !== 1 ? 's' : ''} of work experience — do NOT exaggerate or round up this number.` : 'They are a fresher with no work experience yet.'} ${cvData.roles ? `They have worked as: ${cvData.roles}.` : ''} ${cvData.education ? `Education: ${cvData.education}.` : ''} ${cvData.skills ? `Key skills: ${cvData.skills}.` : ''} ${cvData.certifications ? `Certifications: ${cvData.certifications}.` : ''} Write in first-person style starting with a strong descriptor. Keep it under 60 words. No bullet points, no markdown, no headers, no hashtags. Plain text only. Professional tone suitable for Indian job market.`
       const response = await fetch("/api/generate-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1516,9 +1521,9 @@ function Builder() {
       margin: [8, 8, 8, 8],
       filename: `Resume_${(name || 'Resume').replace(/\s+/g, '_')}_${selectedTemplate}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, scrollY: 0 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, scrollY: 0, windowWidth: 794 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
+      pagebreak: { mode: 'avoid-all', before: '.page-break-before', avoid: ['h2', 'h3', '.job-entry', '.edu-entry'] }
     }
     html2pdf().set(opt).from(element).save()
       .then(() => setIsDownloading(false))
@@ -2091,8 +2096,17 @@ function Builder() {
 
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-700">Score / CGPA <span className="text-gray-400 font-normal">(optional)</span></label>
-                  <input type="text" value={currentEducation.score || ''} onChange={e => setCurrentEducation({ ...currentEducation, score: e.target.value })}
-                    placeholder="e.g. 8.5/10 CGPA or 78%"
+                  <input type="text" value={currentEducation.score || ''} onChange={e => {
+                      const val = e.target.value
+                      // Allow only numbers and one decimal point
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                        const num = parseFloat(val)
+                        if (val === '' || val === '.' || (num <= 100)) {
+                          setCurrentEducation({ ...currentEducation, score: val })
+                        }
+                      }
+                    }}
+                    placeholder="e.g. 8.5 or 78"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
                 </div>
 
