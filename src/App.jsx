@@ -25,7 +25,7 @@ function App() {
         path="/signup/*" 
         element={
           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <SignUp routing="path" path="/signup" signInUrl="/login" afterSignUpUrl="/templates" />
+            <SignUp routing="path" path="/signup" signInUrl="/login" forceRedirectUrl="/templates" />
           </div>
         } 
       />
@@ -33,7 +33,7 @@ function App() {
         path="/login/*" 
         element={
           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <SignIn routing="path" path="/login" signUpUrl="/signup" afterSignInUrl="/templates" />
+            <SignIn routing="path" path="/login" signUpUrl="/signup" forceRedirectUrl="/templates" />
           </div>
         } 
       />
