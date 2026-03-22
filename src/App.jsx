@@ -19,7 +19,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/signup/sso-callback" element={<AuthenticateWithRedirectCallback />} />
+      <Route path="/signup/sso-callback" element={<AuthenticateWithRedirectCallback signInForceRedirectUrl="/templates" signUpForceRedirectUrl="/templates" />} />
       
       {/* Clerk's built-in auth pages */}
       <Route 
