@@ -516,6 +516,42 @@ const MONTHS = [
 ]
 const YEARS = Array.from({ length: 57 }, (_, i) => (new Date().getFullYear() - i).toString())
 
+// ─── DATA: LANGUAGES ──────────────────────────────────────────────────────────
+const LANGUAGE_LIST = [
+  "Hindi","English","Bengali","Telugu","Marathi","Tamil","Urdu","Gujarati","Kannada","Odia",
+  "Malayalam","Punjabi","Assamese","Maithili","Sanskrit","Santali","Kashmiri","Nepali","Sindhi","Konkani",
+  "Manipuri","Bodo","Dogri","Arabic","French","German","Spanish","Portuguese","Italian","Russian",
+  "Japanese","Chinese (Mandarin)","Chinese (Cantonese)","Korean","Dutch","Swedish","Norwegian","Danish",
+  "Finnish","Polish","Czech","Slovak","Hungarian","Romanian","Bulgarian","Greek","Turkish","Persian",
+  "Hebrew","Swahili","Indonesian","Malay","Thai","Vietnamese","Burmese","Sinhala","Dzongkha",
+  "Tibetan","Tagalog","Javanese","Sundanese","Other"
+]
+
+// ─── DATA: SKILLS BY ROLE ─────────────────────────────────────────────────────
+const SKILLS_BY_ROLE = {
+  "Software Engineer": ["JavaScript","TypeScript","Python","Java","C++","React","Node.js","Express","Spring Boot","REST APIs","Git","Docker","Kubernetes","AWS","SQL","MongoDB","PostgreSQL","Redis","CI/CD","Agile","JIRA"],
+  "Sr. Software Engineer": ["System Design","Microservices","Kafka","GraphQL","gRPC","Terraform","AWS","Azure","GCP","Leadership","Code Review","Architecture","DevOps","Docker","Kubernetes"],
+  "Frontend Developer": ["HTML","CSS","JavaScript","TypeScript","React","Vue.js","Angular","Tailwind CSS","SCSS","Redux","Webpack","Figma","REST APIs","Git","Performance Optimisation","Accessibility"],
+  "Backend Developer": ["Node.js","Python","Java","Go","REST APIs","GraphQL","SQL","PostgreSQL","MongoDB","Redis","Docker","AWS","Microservices","Message Queues","Authentication","CI/CD"],
+  "Full Stack Developer": ["React","Node.js","JavaScript","TypeScript","Python","SQL","MongoDB","REST APIs","Docker","Git","AWS","HTML","CSS","Redux","Express"],
+  "Data Analyst": ["Python","SQL","Excel","Tableau","Power BI","R","Pandas","NumPy","Data Visualisation","Statistical Analysis","A/B Testing","Google Analytics","ETL","VLOOKUP","Pivot Tables"],
+  "Data Scientist": ["Python","R","Machine Learning","Deep Learning","TensorFlow","PyTorch","Scikit-learn","NLP","Computer Vision","SQL","Spark","Statistics","Feature Engineering","Model Deployment"],
+  "Marketing Executive": ["SEO","SEM","Google Ads","Meta Ads","Content Marketing","Email Marketing","Social Media Marketing","Google Analytics","HubSpot","Canva","Copywriting","CRM","A/B Testing"],
+  "Sales Executive": ["CRM","Salesforce","Negotiation","Lead Generation","Cold Calling","Pipeline Management","Customer Relationship","Product Demo","Excel","Presentation Skills","Target Achievement"],
+  "Business Development Executive": ["B2B Sales","Partnership Development","Market Research","CRM","Salesforce","Negotiation","Lead Generation","Proposal Writing","Networking","Strategic Planning"],
+  "HR Executive": ["Recruitment","Talent Acquisition","HRMS","Payroll","Employee Engagement","Performance Management","Labour Laws","Onboarding","Training & Development","Excel","Communication"],
+  "Accountant": ["Tally","GST","TDS","Financial Reporting","Excel","SAP","QuickBooks","Auditing","Accounts Payable","Accounts Receivable","Budgeting","MIS Reporting","Tax Filing"],
+  "Graphic Designer": ["Adobe Photoshop","Adobe Illustrator","Adobe InDesign","Canva","Figma","Typography","Branding","Print Design","Social Media Design","Video Editing","Premiere Pro","After Effects"],
+  "UI/UX Designer": ["Figma","Adobe XD","Sketch","Prototyping","Wireframing","User Research","Usability Testing","Design Systems","HTML","CSS","Interaction Design","Information Architecture"],
+  "Mechanical Engineer": ["AutoCAD","SolidWorks","CATIA","ANSYS","FEA","GD&T","Manufacturing Processes","Materials Science","Thermodynamics","Project Management","MS Office","Six Sigma"],
+  "Civil Engineer": ["AutoCAD","Revit","STAAD Pro","ETABS","MS Project","AutoCAD Civil 3D","Structural Analysis","Surveying","Construction Management","IS Codes","Estimation & Costing"],
+  "Operations Executive": ["Process Improvement","Supply Chain","Vendor Management","ERP","SAP","Excel","MIS Reporting","Logistics","SLA Management","Six Sigma","Project Management","Communication"],
+  "Banking Executive": ["KYC","AML","Retail Banking","CASA","Loan Processing","CRM","Core Banking","Financial Products","Customer Service","Compliance","MS Office","Communication"],
+  "Relationship Manager": ["Portfolio Management","Wealth Management","Financial Planning","CRM","Cross-selling","HNI Client Management","Investment Products","Compliance","Networking","Excel"],
+  "General Fresher": ["MS Office","Communication","Teamwork","Problem Solving","Time Management","Excel","PowerPoint","Research","Adaptability","Attention to Detail"],
+  "Engineering Intern": ["Python","Java","C","SQL","Git","MS Office","Communication","Problem Solving","Teamwork","Research","Documentation"]
+}
+
 // ─── DATA: CERTIFICATIONS ─────────────────────────────────────────────────────
 const CERTIFICATION_LIST = [
   // Technology
