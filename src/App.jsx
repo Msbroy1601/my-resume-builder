@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, AuthenticateWithRedirectCallback } from "@clerk/clerk-react"
 import Home from './pages/Home'
 import TemplateGallery from './pages/TemplateGallery'
@@ -15,28 +15,42 @@ function ProtectedRoute({ children }) {
   )
 }
 
+// Redirect already signed-in users away from login/signup pages
+function PublicRoute({ children }) {
+  return (
+    <>
+      <SignedIn><Navigate to="/templates" replace /></SignedIn>
+      <SignedOut>{children}</SignedOut>
+    </>
+  )
+}
+
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/signup/sso-callback" element={<AuthenticateWithRedirectCallback signInForceRedirectUrl="/templates" signUpForceRedirectUrl="/templates" />} />
       
-      {/* Clerk's built-in auth pages */}
-      <Route 
-        path="/signup/*" 
+      {/* Clerk's built-in auth pages — redirect to /templates if already signed in */}
+      <Route
+        path="/signup/*"
         element={
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <SignUp routing="path" path="/signup" signInUrl="/login" forceRedirectUrl="/templates" />
-          </div>
-        } 
+          <PublicRoute>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+              <SignUp routing="path" path="/signup" signInUrl="/login" forceRedirectUrl="/templates" />
+            </div>
+          </PublicRoute>
+        }
       />
-      <Route 
-        path="/login/*" 
+      <Route
+        path="/login/*"
         element={
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <SignIn routing="path" path="/login" signUpUrl="/signup" forceRedirectUrl="/templates" />
-          </div>
-        } 
+          <PublicRoute>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+              <SignIn routing="path" path="/login" signUpUrl="/signup" forceRedirectUrl="/templates" />
+            </div>
+          </PublicRoute>
+        }
       />
       
       <Route 
