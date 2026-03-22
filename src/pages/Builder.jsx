@@ -1671,8 +1671,8 @@ function Builder() {
   const SidebarTemplate = () => (
     <div className="bg-white shadow-2xl overflow-hidden">
       <div className="p-8 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-green-700 hover:to-teal-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}><span className="mr-2">📥</span> {isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div>
-      <div id="resume-preview" style={{display:"table", width:"100%", tableLayout:"fixed"}}>
-        <div style={{display:"table-cell", width:"33%", verticalAlign:"top"}} className="bg-gradient-to-b from-green-700 to-teal-700 text-white p-8">
+      <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}>
+        <div style={{float:"left", width:"33%"}} className="bg-gradient-to-b from-green-700 to-teal-700 text-white p-8">
           {photo ? <img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-green-400 mx-auto mb-5 shadow-md" /> : <div className="w-16 h-16 rounded-full bg-green-600 border-4 border-green-400 mx-auto mb-5 flex items-center justify-center text-xl font-bold text-white">{name ? name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'YN'}</div>}
           <div className="mb-8"><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Contact</h3><div className="space-y-3 text-sm"><div><p className="text-green-200 text-xs mb-1">Email</p><p className="break-words">{email || 'your.email@example.com'}</p></div><div><p className="text-green-200 text-xs mb-1">Phone</p><p>{phone || '+91 98765 43210'}</p></div></div></div>
           {skillsList.length > 0 && (<div className="mb-8"><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Skills</h3><div className="space-y-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between text-sm"><span className="flex items-center"><span className="w-2 h-2 bg-green-300 rounded-full mr-2 inline-block"></span>{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-2 h-2 rounded-full ${sk.level>=n?'bg-green-300':'bg-green-800'}`}></span>)}</div></div>))}</div></div>)}
@@ -1682,7 +1682,7 @@ function Builder() {
           {hobbies && (<div className="mb-8"><h3 className="text-sm font-bold mb-3 uppercase tracking-wider border-b border-green-300 pb-2">Hobbies</h3><div className="flex flex-wrap gap-1">{hobbies.split(',').map((h,i) => h.trim() && <span key={i} className="text-xs bg-green-700 px-2 py-1 rounded-full">{h.trim()}</span>)}</div></div>)}
           {educationList.length > 0 && (<div><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Education</h3><div className="space-y-4">{educationList.map((edu, i) => (<div key={i} className="text-sm"><p className="font-bold">{edu.school}</p><p className="text-green-200 text-xs mt-1">{edu.degree}</p><p className="text-green-300 text-xs mt-1">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
         </div>
-        <div style={{display:"table-cell", width:"67%", verticalAlign:"top"}} className="p-8">
+        <div style={{float:"left", width:"67%"}} className="p-8">
           <div className="mb-8"><h3 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">{name || 'Your Name'}</h3><div className="h-1 w-24 bg-gradient-to-r from-green-600 to-teal-600"></div></div>
           {summary && (<div className="mb-8"><h3 className="text-lg font-bold text-green-700 mb-3 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-700 leading-relaxed">{summary}</p></div>)}
           {workExperiences.length > 0 && (<div className="mb-8"><h3 className="text-lg font-bold text-green-700 mb-5 uppercase tracking-wide">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-green-600 font-semibold mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
@@ -2453,9 +2453,8 @@ const GreenSidebarTemplate = () => (
         <span className="mr-2">📥</span> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
       </button>
     </div>
-    <div id="resume-preview" style={{display:"table", width:"100%", tableLayout:"fixed"}}>
-      <div style={{display:"table-row"}}>
-        <div style={{display:"table-cell", width:"33%", verticalAlign:"top"}} className="bg-green-800 text-white p-6 rounded-l-lg">
+    <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}>
+        <div style={{float:"left", width:"33%"}} className="bg-green-800 text-white p-6 rounded-l-lg">
           <div className="mb-6 text-center">
             {photo
               ? <img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-green-400 mx-auto mb-3 shadow-md" />
@@ -2485,7 +2484,7 @@ const GreenSidebarTemplate = () => (
           </div>)}
         </div>
         {/* Right main content */}
-        <div style={{display:"table-cell", width:"67%", verticalAlign:"top"}} className="p-6 bg-white rounded-r-lg">
+        <div style={{float:"left", width:"67%"}} className="p-6 bg-white rounded-r-lg">
           {summary && (<div className="mb-6 pb-4 border-b border-gray-200"><p className="text-sm text-gray-600 leading-relaxed italic">{summary}</p></div>)}
           {workExperiences.length > 0 && (<div className="mb-6 pb-4 border-b border-gray-200">
             <h3 className="text-base font-bold text-green-800 mb-4 uppercase tracking-wide border-b-2 border-green-700 pb-1">Work History</h3>
@@ -2512,7 +2511,6 @@ const GreenSidebarTemplate = () => (
             <div className="space-y-2">{certifications.map((cert,i) => (<div key={i}><p className="text-sm font-semibold text-gray-800">{cert.name}</p>{(cert.issuer||cert.year) && <p className="text-xs text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}</div>))}</div>
           </div>)}
         </div>
-      </div>
     </div>
   </div>
 )
@@ -2812,8 +2810,8 @@ const NavyTemplate = () => (
 const BlueSidebarTemplate = () => (
   <div className="bg-white shadow-2xl overflow-hidden">
     <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition shadow-lg flex items-center justify-center ${isDownloading?'opacity-50 cursor-not-allowed':''}`}><span className="mr-2">📥</span>{isDownloading?'Generating PDF...':'Download PDF'}</button></div>
-    <div id="resume-preview" style={{display:"table", width:"100%", tableLayout:"fixed"}}>
-      <div style={{display:"table-cell", width:"33%", verticalAlign:"top"}} className="bg-blue-500 text-white p-5">
+    <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}>
+      <div style={{float:"left", width:"33%"}} className="bg-blue-500 text-white p-5">
         {photo?<img src={photo} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-white mx-auto mb-4 shadow-lg"/>:<div className="w-24 h-24 rounded-full bg-blue-400 border-4 border-white mx-auto mb-4 flex items-center justify-center text-2xl font-bold">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
         <h1 className="text-lg font-bold text-white text-center mb-5 leading-tight">{name||'Your Name'}</h1>
         <div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Contact</h3><div className="space-y-1.5 text-xs">{email&&<p className="break-all text-blue-100">{email}</p>}{phone&&<p className="text-blue-100">{phone}</p>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.github}</a>}</div></div>
@@ -2821,7 +2819,7 @@ const BlueSidebarTemplate = () => (
         {languages.length>0&&(<div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Languages</h3><div className="space-y-2">{languages.map((lang,i)=>(<div key={i}><span className="text-xs text-white font-medium">{lang.name}</span><div className="flex gap-0.5 mt-0.5">{[1,2,3,4,5].map(n=><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-white':'bg-blue-400'}`}></span>)}</div></div>))}</div></div>)}
         {hobbies&&(<div><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Interests</h3><div className="flex flex-wrap gap-1">{hobbies.split(',').map((h,i)=>h.trim()&&<span key={i} className="text-xs bg-blue-400 text-white px-2 py-0.5 rounded-full">{h.trim()}</span>)}</div></div>)}
       </div>
-      <div style={{display:"table-cell", width:"67%", verticalAlign:"top"}} className="p-6">
+      <div style={{float:"left", width:"67%"}} className="p-6">
         {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-5">{summary}</p>}
         {workExperiences.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-4"><div className="w-20 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-blue-500 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities&&<div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}{exp.achievements&&<div className="mt-1 pt-1 border-t border-blue-100"><p className="text-xs font-bold text-blue-600 uppercase mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div></div>))}</div></div>)}
         {certifications.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Certifications</h2><ul className="space-y-1">{certifications.map((cert,i)=>(<li key={i} className="flex gap-2 text-xs text-gray-700"><span className="text-blue-400">•</span><span><span className="font-semibold">{cert.name}</span>{cert.issuer&&` — ${cert.issuer}`}{cert.year&&` (${cert.year})`}</span></li>))}</ul></div>)}
