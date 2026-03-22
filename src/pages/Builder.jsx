@@ -801,9 +801,11 @@ function Builder() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [summary, setSummary] = useState('')
+  const [location, setLocation] = useState('')
 
   const [workExperiences, setWorkExperiences] = useState([])
   const [editingWorkIdx, setEditingWorkIdx] = useState(null)
+  const [overlapWarning, setOverlapWarning] = useState(null) // { overlapping: exp, pending: work }
   const [roleContent, setRoleContent] = useState(null)
   const [currentWork, setCurrentWork] = useState({
     company: '', jobTitle: '', startMonth: '', startYear: '',
@@ -868,6 +870,7 @@ function Builder() {
         setEmail(data.email || '')
         setPhone(data.phone || '')
         setSummary(data.summary || '')
+        setLocation(data.location || '')
         setWorkExperiences(data.workExperiences || [])
         setEducationList(data.educationList || [])
         setProjects(data.projects || [])
@@ -887,13 +890,13 @@ function Builder() {
   }, [searchParams])
 
   const handleSave = () => {
-    localStorage.setItem('resumeData', JSON.stringify({ name, email, phone, summary, workExperiences, educationList, projects, skillsList, certifications, websiteLinks, languages, hobbies, selectedTemplate, photo }))
+    localStorage.setItem('resumeData', JSON.stringify({ name, email, phone, location, summary, workExperiences, educationList, projects, skillsList, certifications, websiteLinks, languages, hobbies, selectedTemplate, photo }))
     alert('✅ Resume saved to browser!')
   }
 
   const handleClearAll = () => {
     if (!window.confirm('Clear all data? This cannot be undone.')) return
-    setName(''); setEmail(''); setPhone(''); setSummary(''); setNameError('')
+    setName(''); setEmail(''); setPhone(''); setLocation(''); setSummary(''); setNameError('')
     setWorkExperiences([]); setEducationList([]); setProjects([]); setCertifications([]); setSkillsList([]); setPhoto(null); setWebsiteLinks({ linkedin: '', github: '', portfolio: '', other: '' }); setLanguages([]); setHobbies(''); setSkillsList([]); setPhoto(null)
     setCurrentWork({ company: '', jobTitle: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, responsibilities: '', achievements: '' })
     setCurrentEducation({ school: '', degree: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '' })
@@ -935,8 +938,37 @@ function Builder() {
     return Object.keys(errors).length === 0
   }
 
-  const addWorkExperience = () => {
+
+  const dateToNum = (month, year, isPresent) => {
+    if (isPresent) return 209912
+    if (!month || !year) return null
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    return parseInt(year) * 100 + (months.indexOf(month) + 1)
+  }
+
+  const findOverlap = (newWork, skipIdx = null) => {
+    const ns = dateToNum(newWork.startMonth, newWork.startYear, false)
+    const ne = dateToNum(newWork.endMonth, newWork.endYear, newWork.isPresent)
+    if (!ns || !ne) return null
+    return workExperiences.find((exp, i) => {
+      if (i === skipIdx) return false
+      const es = dateToNum(exp.startMonth, exp.startYear, false)
+      const ee = dateToNum(exp.endMonth, exp.endYear, exp.isPresent)
+      if (!es || !ee) return false
+      return ns <= ee && es <= ne
+    }) || null
+  }
+
+  const addWorkExperience = (forceAdd = false) => {
     if (!validateWork()) return
+    if (!forceAdd) {
+      const overlap = findOverlap(currentWork, editingWorkIdx)
+      if (overlap) {
+        setOverlapWarning({ overlapping: overlap, pending: currentWork })
+        return
+      }
+    }
+    setOverlapWarning(null)
     if (editingWorkIdx !== null) {
       const updated = [...workExperiences]
       updated[editingWorkIdx] = currentWork
@@ -1331,6 +1363,7 @@ const GreenSidebarTemplate = () => (
             <h4 className="text-xs font-bold uppercase tracking-widest text-green-300 mb-3">Contact</h4>
             {email && <p className="text-xs text-green-100 mb-2 break-all">✉ {email}</p>}
             {phone && <p className="text-xs text-green-100 mb-2">📞 {phone}</p>}
+            {location && <p className="text-xs text-green-100 mb-2">📍 {location}</p>}
             {websiteLinks.linkedin && <p className="text-xs text-green-200 break-all mb-1">💼 <a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{websiteLinks.linkedin}</a></p>}
             {websiteLinks.github && <p className="text-xs text-green-200 break-all mb-1">🐙 <a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{websiteLinks.github}</a></p>}
             {websiteLinks.portfolio && <p className="text-xs text-green-200 break-all mb-1">🌍 <a href={websiteLinks.portfolio} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{websiteLinks.portfolio}</a></p>}
@@ -1402,7 +1435,7 @@ const GoldHeaderTemplate = () => (
       {/* Contact bar */}
       <div className="bg-gray-50 border border-gray-200 px-6 py-3 flex flex-wrap gap-4 text-sm text-gray-600 mb-5">
         {email && <span>✉ {email}</span>}
-        {phone && <span>📞 {phone}</span>}
+        {phone && <span>📞 {phone}</span>}{location && <span>📍 {location}</span>}
         {websiteLinks.linkedin && <span className="text-amber-700">💼 {websiteLinks.linkedin}</span>}
         {websiteLinks.github && <span className="text-amber-700">🐙 {websiteLinks.github}</span>}
         {websiteLinks.portfolio && <span className="text-amber-700">🌍 {websiteLinks.portfolio}</span>}
@@ -1466,7 +1499,7 @@ const ClassicSerifTemplate = () => (
           <h3 className="text-3xl font-bold text-gray-900 tracking-wide" style={{fontVariant:'small-caps'}}>{name || 'Your Name'}</h3>
           <div className="flex flex-wrap gap-3 mt-1 text-sm text-gray-600">
             {email && <span>{email}</span>}
-            {phone && <span>• {phone}</span>}
+            {phone && <span>• {phone}</span>}{location && <span>• 📍 {location}</span>}
             {websiteLinks.linkedin && <span className="text-blue-700">• {websiteLinks.linkedin}</span>}
             {websiteLinks.github && <span className="text-blue-700">• {websiteLinks.github}</span>}
           </div>
@@ -1530,6 +1563,7 @@ const CoralTemplate = () => (
           <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
             {email && <span>✉ {email}</span>}
             {phone && <span>📞 {phone}</span>}
+            {location && <span>📍 {location}</span>}
             {websiteLinks.linkedin && <span className="text-orange-600">💼 {websiteLinks.linkedin}</span>}
             {websiteLinks.github && <span className="text-orange-600">🐙 {websiteLinks.github}</span>}
             {websiteLinks.portfolio && <span className="text-orange-600">🌍 {websiteLinks.portfolio}</span>}
@@ -1585,7 +1619,7 @@ const AmberTemplate = () => (
       </div>
       <div className="bg-gray-50 border-b border-gray-200 px-8 py-3 flex flex-wrap gap-4 text-sm text-gray-700">
         <span className="font-bold text-amber-700 border-r border-gray-300 pr-4">Contact</span>
-        {email&&<span>{email}</span>}{phone&&<span>{phone}</span>}
+        {email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{location&&<span>📍 {location}</span>}
         {websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">{websiteLinks.linkedin}</a>}
         {websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">{websiteLinks.github}</a>}
         {websiteLinks.portfolio&&<a href={websiteLinks.portfolio} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">{websiteLinks.portfolio}</a>}
@@ -1636,7 +1670,7 @@ const HexagonTemplate = () => (
     <div id="resume-preview" className="bg-white px-10 py-8">
       <div className="flex items-center gap-6 mb-5">
         <div className="w-16 h-16 bg-rose-400 flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style={{clipPath:'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)'}}>{name?name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase():'YN'}</div>
-        <div><h1 className="text-3xl font-bold text-rose-500">{name||'Your Name'}</h1><div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">{email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.github}</a>}</div></div>
+        <div><h1 className="text-3xl font-bold text-rose-500">{name||'Your Name'}</h1><div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">{email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{location&&<span>📍 {location}</span>}{location&&<span>📍 {location}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.github}</a>}</div></div>
       </div>
       {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-6">{summary}</p>}
       {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-24 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-rose-400 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pt-1 border-t border-rose-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div></div>))}</div></div>)}
@@ -1657,7 +1691,7 @@ const NavyTemplate = () => (
     <div id="resume-preview" className="bg-white px-8 py-8">
       <div className="flex items-start gap-6 mb-6">
         {photo?<img src={photo} alt="Profile" className="w-24 h-24 object-cover flex-shrink-0 border-2 border-blue-900"/>:<div className="w-24 h-24 bg-blue-100 border-2 border-blue-900 flex items-center justify-center text-2xl font-bold text-blue-900 flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
-        <div className="flex-1"><h1 className="text-3xl font-bold text-blue-900 mb-2">{name||'Your Name'}</h1><div className="grid grid-cols-2 gap-1 text-xs text-gray-600">{email&&<span>✉ {email}</span>}{phone&&<span>📞 {phone}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">💼 {websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">🐙 {websiteLinks.github}</a>}</div></div>
+        <div className="flex-1"><h1 className="text-3xl font-bold text-blue-900 mb-2">{name||'Your Name'}</h1><div className="grid grid-cols-2 gap-1 text-xs text-gray-600">{email&&<span>✉ {email}</span>}{phone&&<span>📞 {phone}</span>}{location&&<span>📍 {location}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">💼 {websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">🐙 {websiteLinks.github}</a>}</div></div>
       </div>
       {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-6 border-l-4 border-blue-900 pl-3">{summary}</p>}
       {educationList.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">🎓 Education</h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i} className="flex gap-5"><div className="w-20 flex-shrink-0 text-xs text-gray-500">{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</div><div><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-blue-800 text-xs italic">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500">{edu.score}</p>}</div></div>))}</div></div>)}
@@ -1679,7 +1713,7 @@ const BlueSidebarTemplate = () => (
       <div style={{float:"left", width:"33%"}} className="bg-blue-500 text-white p-5">
         {photo?<img src={photo} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-white mx-auto mb-4 shadow-lg"/>:<div className="w-24 h-24 rounded-full bg-blue-400 border-4 border-white mx-auto mb-4 flex items-center justify-center text-2xl font-bold">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
         <h1 className="text-lg font-bold text-white text-center mb-5 leading-tight">{name||'Your Name'}</h1>
-        <div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Contact</h3><div className="space-y-1.5 text-xs">{email&&<p className="break-all text-blue-100">{email}</p>}{phone&&<p className="text-blue-100">{phone}</p>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.github}</a>}</div></div>
+        <div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Contact</h3><div className="space-y-1.5 text-xs">{email&&<p className="break-all text-blue-100">{email}</p>}{phone&&<p className="text-blue-100">{phone}</p>}{location&&<p className="text-xs text-blue-100">{location}</p>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.github}</a>}</div></div>
         {skillsList.length>0&&(<div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Skills</h3><div className="space-y-2">{skillsList.map((sk,i)=>(<div key={i}><span className="text-xs text-white font-medium">{sk.name}</span><div className="h-1.5 bg-blue-400 rounded-full mt-0.5"><div className="h-1.5 bg-white rounded-full" style={{width:`${sk.level*20}%`}}></div></div></div>))}</div></div>)}
         {languages.length>0&&(<div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Languages</h3><div className="space-y-2">{languages.map((lang,i)=>(<div key={i}><span className="text-xs text-white font-medium">{lang.name}</span><div className="flex gap-0.5 mt-0.5">{[1,2,3,4,5].map(n=><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-white':'bg-blue-400'}`}></span>)}</div></div>))}</div></div>)}
         {hobbies&&(<div><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Interests</h3><div className="flex flex-wrap gap-1">{hobbies.split(',').map((h,i)=>h.trim()&&<span key={i} className="text-xs bg-blue-400 text-white px-2 py-0.5 rounded-full">{h.trim()}</span>)}</div></div>)}
@@ -1740,6 +1774,10 @@ const BlueSidebarTemplate = () => (
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-700">Phone</label>
                   <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Location <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Mumbai, India" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
                 </div>
 
                 {/* Photo Upload - only shown for templates that display it */}
@@ -2407,6 +2445,40 @@ const BlueSidebarTemplate = () => (
           </div>
         </div>
       </div>
+      {/* ── Overlap Warning Modal ── */}
+      {overlapWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-lg">⚠️</div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Date Overlap Detected</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  This role overlaps with <span className="font-semibold text-gray-900">{overlapWarning.overlapping.jobTitle}</span> at <span className="font-semibold text-gray-900">{overlapWarning.overlapping.company}</span>.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  That's okay if you were working at two organisations simultaneously — just confirming it's intentional.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setOverlapWarning(null)}
+                className="flex-1 border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm"
+              >
+                ← Go Back & Edit
+              </button>
+              <button
+                onClick={() => addWorkExperience(true)}
+                className="flex-1 bg-amber-500 text-white font-bold py-2.5 rounded-xl hover:bg-amber-600 transition text-sm"
+              >
+                Save Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
