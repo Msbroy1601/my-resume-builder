@@ -516,476 +516,32 @@ const MONTHS = [
 ]
 const YEARS = Array.from({ length: 57 }, (_, i) => (new Date().getFullYear() - i).toString())
 
-// ─── DATA: SMART SUGGESTIONS ──────────────────────────────────────────────────
-const LANGUAGE_LIST = [
-  "Hindi","English","Bengali","Telugu","Marathi","Tamil","Urdu","Gujarati","Kannada","Odia",
-  "Malayalam","Punjabi","Assamese","Maithili","Sanskrit","Santali","Kashmiri","Nepali","Sindhi","Konkani",
-  "Manipuri","Bodo","Dogri","Arabic","French","German","Spanish","Portuguese","Italian","Russian",
-  "Japanese","Chinese (Mandarin)","Chinese (Cantonese)","Korean","Dutch","Swedish","Norwegian","Danish",
-  "Finnish","Polish","Czech","Slovak","Hungarian","Romanian","Bulgarian","Greek","Turkish","Persian",
-  "Hebrew","Swahili","Indonesian","Malay","Thai","Vietnamese","Burmese","Sinhala","Dzongkha",
-  "Tibetan","Tagalog","Javanese","Sundanese","Other"
-]
+// ─── ROLE CONTENT ─────────────────────────────────────────────────────────────
+// 298 roles × 5 responsibilities + 5 achievements, lazy-loaded from /roleContent.json
 
-const CERTIFICATION_LIST = [
-  // Technology
-  "AWS Certified Solutions Architect","AWS Certified Developer","AWS Certified Cloud Practitioner",
-  "Google Cloud Professional Data Engineer","Google Cloud Associate Engineer","Azure Fundamentals (AZ-900)",
-  "Azure Administrator (AZ-104)","Azure Developer (AZ-204)","Azure Solutions Architect (AZ-305)",
-  "Certified Kubernetes Administrator (CKA)","Docker Certified Associate","HashiCorp Terraform Associate",
-  "Google Associate Cloud Engineer","Red Hat Certified Engineer (RHCE)","CompTIA Security+",
-  "CompTIA Network+","CompTIA A+","Certified Ethical Hacker (CEH)","CISSP","OSCP",
-  // Data & Analytics
-  "Google Data Analytics Certificate","IBM Data Science Professional","Microsoft Power BI Data Analyst",
-  "Tableau Desktop Specialist","Cloudera Data Platform","Databricks Certified Associate",
-  "Certified Analytics Professional (CAP)","SAS Certified Data Scientist",
-  // Project Management
-  "PMP - Project Management Professional","CAPM","Prince2 Foundation","Prince2 Practitioner",
-  "Certified Scrum Master (CSM)","Certified Scrum Product Owner (CSPO)","SAFe Agilist",
-  "ITIL Foundation","Six Sigma Green Belt","Six Sigma Black Belt","Lean Six Sigma",
-  // Finance & Accounting
-  "CFA Level 1","CFA Level 2","CFA Level 3","FRM Part 1","FRM Part 2","CFP - Certified Financial Planner",
-  "CA - Chartered Accountant","CMA - Cost & Management Accountant","CS - Company Secretary",
-  "ACCA","CPA - Certified Public Accountant","CAIA","Series 7","Series 63",
-  // Marketing & Sales
-  "Google Ads Certification","Google Analytics Certification","HubSpot Inbound Marketing",
-  "HubSpot Content Marketing","Facebook Blueprint","Hootsuite Social Marketing",
-  "Salesforce Administrator","Salesforce Sales Cloud Consultant","Marketo Certified Expert",
-  // HR
-  "SHRM-CP","SHRM-SCP","PHR - Professional in HR","SPHR","CHRP","Certified Payroll Professional",
-  // Quality & Manufacturing
-  "ISO 9001 Lead Auditor","ISO 27001 Lead Implementer","OHSAS 18001",
-  "CQPA - Certified Quality Process Analyst","Lean Manufacturing Certification",
-  // Design & Creative
-  "Adobe Certified Professional","Google UX Design Certificate","Interaction Design Foundation",
-  "AutoCAD Certified User","Revit Architecture Certified",
-  // Indian Specific
-  "NASSCOM Certified","NIELIT O Level","NIELIT A Level","NIELIT B Level","NIELIT C Level",
-  "NSDC Certified Skill Trainer","Pradhan Mantri Kaushal Kendra Certification",
-  "NISM Series I - Currency Derivatives","NISM Series V-A - Mutual Fund Distributors",
-  "NISM Series VIII - Equity Derivatives","IRDA Life Insurance Agent","IRDA General Insurance",
-  // Online Learning
-  "Coursera Google IT Support","Coursera Deep Learning Specialization","Coursera Machine Learning",
-  "edX MicroMasters","Udemy Complete Web Development","freeCodeCamp Full Stack",
-  "LinkedIn Learning Certificate","Microsoft Certified Educator",
-  "Other"
-]
-
-const SKILLS_BY_ROLE = {
-  "Software Engineer": ["JavaScript","TypeScript","Python","Java","C++","React","Node.js","Express","Spring Boot","REST APIs","Git","Docker","Kubernetes","AWS","SQL","MongoDB","PostgreSQL","Redis","CI/CD","Agile","JIRA"],
-  "Sr. Software Engineer": ["System Design","Microservices","Kafka","GraphQL","gRPC","Terraform","AWS","Azure","GCP","Leadership","Code Review","Architecture","DevOps","Docker","Kubernetes"],
-  "Frontend Developer": ["HTML","CSS","JavaScript","TypeScript","React","Vue.js","Angular","Tailwind CSS","SCSS","Redux","Webpack","Figma","REST APIs","Git","Performance Optimisation","Accessibility"],
-  "Backend Developer": ["Node.js","Python","Java","Go","REST APIs","GraphQL","SQL","PostgreSQL","MongoDB","Redis","Docker","AWS","Microservices","Message Queues","Authentication","CI/CD"],
-  "Full Stack Developer": ["React","Node.js","JavaScript","TypeScript","Python","SQL","MongoDB","REST APIs","Docker","Git","AWS","HTML","CSS","Redux","Express"],
-  "Data Analyst": ["Python","SQL","Excel","Tableau","Power BI","R","Pandas","NumPy","Data Visualisation","Statistical Analysis","A/B Testing","Google Analytics","ETL","VLOOKUP","Pivot Tables"],
-  "Data Scientist": ["Python","R","Machine Learning","Deep Learning","TensorFlow","PyTorch","Scikit-learn","NLP","Computer Vision","SQL","Spark","Statistics","Feature Engineering","Model Deployment"],
-  "Marketing Executive": ["SEO","SEM","Google Ads","Meta Ads","Content Marketing","Email Marketing","Social Media Marketing","Google Analytics","HubSpot","Canva","Copywriting","CRM","A/B Testing"],
-  "Sales Executive": ["CRM","Salesforce","Negotiation","Lead Generation","Cold Calling","Pipeline Management","Customer Relationship","Product Demo","Excel","Presentation Skills","Target Achievement"],
-  "Business Development Executive": ["B2B Sales","Partnership Development","Market Research","CRM","Salesforce","Negotiation","Lead Generation","Proposal Writing","Networking","Strategic Planning"],
-  "HR Executive": ["Recruitment","Talent Acquisition","HRMS","Payroll","Employee Engagement","Performance Management","Labour Laws","Onboarding","Training & Development","Excel","Communication"],
-  "Accountant": ["Tally","GST","TDS","Financial Reporting","Excel","SAP","QuickBooks","Auditing","Accounts Payable","Accounts Receivable","Budgeting","MIS Reporting","Tax Filing"],
-  "Graphic Designer": ["Adobe Photoshop","Adobe Illustrator","Adobe InDesign","Canva","Figma","Typography","Branding","Print Design","Social Media Design","Video Editing","Premiere Pro","After Effects"],
-  "UI/UX Designer": ["Figma","Adobe XD","Sketch","Prototyping","Wireframing","User Research","Usability Testing","Design Systems","HTML","CSS","Interaction Design","Information Architecture"],
-  "Mechanical Engineer": ["AutoCAD","SolidWorks","CATIA","ANSYS","FEA","GD&T","Manufacturing Processes","Materials Science","Thermodynamics","Project Management","MS Office","Six Sigma"],
-  "Civil Engineer": ["AutoCAD","Revit","STAAD Pro","ETABS","MS Project","AutoCAD Civil 3D","Structural Analysis","Surveying","Construction Management","IS Codes","Estimation & Costing"],
-  "Operations Executive": ["Process Improvement","Supply Chain","Vendor Management","ERP","SAP","Excel","MIS Reporting","Logistics","SLA Management","Six Sigma","Project Management","Communication"],
-  "Banking Executive": ["KYC","AML","Retail Banking","CASA","Loan Processing","CRM","Core Banking","Financial Products","Customer Service","Compliance","MS Office","Communication"],
-  "Relationship Manager": ["Portfolio Management","Wealth Management","Financial Planning","CRM","Cross-selling","HNI Client Management","Investment Products","Compliance","Networking","Excel"],
-  "General Fresher": ["MS Office","Communication","Teamwork","Problem Solving","Time Management","Excel","PowerPoint","Research","Adaptability","Attention to Detail"],
-  "Engineering Intern": ["Python","Java","C","SQL","Git","MS Office","Communication","Problem Solving","Teamwork","Research","Documentation"]
-}
-
-const SUGGESTIONS = {
-  "Software Engineer": {
-    responsibilities: [
-      "Develop and maintain scalable web applications using modern frameworks",
-      "Collaborate with cross-functional teams to deliver product features on time",
-      "Design and implement RESTful APIs for frontend-backend integration",
-      "Participate in code reviews to ensure code quality and best practices",
-      "Write unit and integration tests to ensure software reliability",
-      "Troubleshoot and debug production issues and performance bottlenecks"
-    ],
-    achievements: [
-      "Improved application performance by 30% through code optimisation",
-      "Reduced bug count by 40% by implementing automated testing pipelines",
-      "Delivered 3 major product features ahead of schedule",
-      "Received 'Best Engineer' award for Q3 2024",
-      "Reduced deployment time by 60% by implementing CI/CD pipelines",
-      "Improved code coverage from 45% to 85% within 6 months"
-    ]
-  },
-  "Sr. Software Engineer": {
-    responsibilities: [
-      "Lead a team of 5+ engineers and drive end-to-end feature delivery",
-      "Architect scalable microservices-based solutions for high-traffic systems",
-      "Mentor junior developers and conduct regular code reviews",
-      "Drive technical discussions and align stakeholders on engineering decisions",
-      "Define engineering best practices and coding standards for the team",
-      "Collaborate with product managers to scope and plan technical roadmaps"
-    ],
-    achievements: [
-      "Reduced system downtime by 40% through proactive monitoring and improvements",
-      "Scaled platform to handle 10x traffic growth with zero downtime",
-      "Mentored 4 junior engineers, 2 of whom were promoted within 1 year",
-      "Delivered platform migration 2 weeks ahead of schedule saving ₹15L in costs",
-      "Improved team velocity by 35% through process improvements",
-      "Architected a new data pipeline reducing processing time by 50%"
-    ]
-  },
-  "Frontend Developer": {
-    responsibilities: [
-      "Build responsive, accessible UI components using React and Tailwind CSS",
-      "Integrate REST APIs and manage application state using Redux/Context API",
-      "Collaborate with designers to translate Figma mockups into pixel-perfect UI",
-      "Ensure cross-browser compatibility across Chrome, Firefox, and Safari",
-      "Write reusable component libraries to improve development speed",
-      "Conduct performance audits and implement optimisation strategies"
-    ],
-    achievements: [
-      "Optimised page load times by 40% using lazy loading and code splitting",
-      "Reduced bundle size by 35% through tree shaking and code optimisation",
-      "Built a component library used across 3 product teams",
-      "Improved Lighthouse performance score from 62 to 94",
-      "Reduced UI bug reports by 50% through systematic testing",
-      "Delivered complete redesign of dashboard in 4 weeks"
-    ]
-  },
-  "Backend Developer": {
-    responsibilities: [
-      "Design and build RESTful APIs to support frontend and mobile applications",
-      "Optimise database queries and manage schema design for performance",
-      "Implement authentication systems including JWT, OAuth2, and SSO",
-      "Deploy and manage applications on cloud platforms (AWS/GCP/Azure)",
-      "Build event-driven architecture using message queues for async processing",
-      "Maintain comprehensive API documentation and developer guides"
-    ],
-    achievements: [
-      "Optimised database queries reducing average response time by 50%",
-      "Built APIs serving 100K+ daily requests with 99.9% uptime",
-      "Reduced server costs by 25% through infrastructure optimisation",
-      "Implemented caching strategy reducing database load by 60%",
-      "Migrated monolith to microservices reducing deployment risk significantly",
-      "Achieved zero critical security vulnerabilities in annual audit"
-    ]
-  },
-  "Full Stack Developer": {
-    responsibilities: [
-      "Develop end-to-end features across frontend (React) and backend (Node.js)",
-      "Manage MySQL/MongoDB databases with efficient schema design",
-      "Integrate third-party APIs including payment gateways and external services",
-      "Deploy and manage applications on cloud platforms",
-      "Implement real-time features using WebSockets",
-      "Conduct code reviews and ensure adherence to coding standards"
-    ],
-    achievements: [
-      "Delivered 5 full-stack features end-to-end within tight deadlines",
-      "Reduced technical debt by 40% by refactoring legacy codebase",
-      "Built an internal tool saving the operations team 8 hours/week",
-      "Improved app load time by 45% through full-stack optimisations",
-      "Successfully migrated application from monolith to microservices",
-      "Increased test coverage from 20% to 80% across the codebase"
-    ]
-  },
-  "Data Analyst": {
-    responsibilities: [
-      "Analyse large datasets using Python, SQL, and Excel to derive actionable insights",
-      "Create interactive dashboards and reports in Power BI and Tableau",
-      "Collaborate with business teams to understand data requirements",
-      "Clean, preprocess, and validate datasets to ensure data quality",
-      "Conduct A/B testing and statistical analysis to support product decisions",
-      "Present data-driven findings and recommendations to senior stakeholders"
-    ],
-    achievements: [
-      "Automated reporting workflows saving 10+ hours per week",
-      "Identified ₹25L cost-saving opportunity through spend analysis",
-      "Improved data quality by 25% through data cleaning initiatives",
-      "Built a real-time sales dashboard adopted by the entire sales team",
-      "Increased campaign ROI by 20% through data-driven targeting insights",
-      "Reduced monthly reporting time from 3 days to 4 hours"
-    ]
-  },
-  "Data Scientist": {
-    responsibilities: [
-      "Build and evaluate machine learning models for business use cases",
-      "Perform feature engineering and model tuning to improve accuracy",
-      "Collaborate with engineering teams to deploy ML models to production",
-      "Use NLP and deep learning techniques for text and image analysis",
-      "Conduct exploratory data analysis to uncover patterns and insights",
-      "Document model methodologies and present findings to stakeholders"
-    ],
-    achievements: [
-      "Built a churn prediction model achieving 91% accuracy",
-      "Reduced customer churn by 15% through ML-driven interventions",
-      "Deployed 3 ML models to production serving 50K+ users daily",
-      "Improved recommendation engine CTR by 28%",
-      "Reduced model training time by 50% through pipeline optimisation",
-      "Generated ₹1.2Cr in revenue through a pricing optimisation model"
-    ]
-  },
-  "Marketing Executive": {
-    responsibilities: [
-      "Plan and execute digital marketing campaigns across social media channels",
-      "Manage Google Ads, Meta Ads, and email marketing campaigns",
-      "Create and publish SEO-optimised content to drive organic traffic",
-      "Coordinate with design team to produce marketing collaterals",
-      "Monitor and report on campaign KPIs including CTR, CPC, and ROAS",
-      "Conduct competitor research and market analysis"
-    ],
-    achievements: [
-      "Increased organic traffic by 45% through a targeted SEO strategy",
-      "Generated 500+ qualified leads per month through inbound marketing",
-      "Reduced cost per lead by 30% through campaign optimisation",
-      "Grew social media following from 2K to 18K in 6 months",
-      "Achieved 3.5x ROAS on Google Ads campaigns",
-      "Launched a campaign that generated ₹40L in pipeline revenue"
-    ]
-  },
-  "Sales Executive": {
-    responsibilities: [
-      "Identify and pursue new business opportunities through outbound prospecting",
-      "Conduct product demonstrations and presentations to potential clients",
-      "Manage the full sales cycle from lead generation to deal closure",
-      "Maintain and grow relationships with existing client accounts",
-      "Prepare proposals, quotations, and contracts for prospective clients",
-      "Maintain accurate records in CRM tools like Salesforce or Zoho"
-    ],
-    achievements: [
-      "Consistently achieved 120% of monthly sales targets",
-      "Generated ₹50L+ in new revenue through client acquisitions",
-      "Closed the largest deal in company history worth ₹1.2Cr",
-      "Reduced sales cycle length by 20% through improved demo process",
-      "Ranked #1 in regional sales team for 3 consecutive quarters",
-      "Expanded client portfolio by 35% within the first year"
-    ]
-  },
-  "Business Development Executive": {
-    responsibilities: [
-      "Identify new business opportunities and potential partnership channels",
-      "Build and manage a qualified pipeline through outbound prospecting",
-      "Conduct market research to identify trends and growth opportunities",
-      "Negotiate and close partnership and enterprise contracts",
-      "Collaborate with product and marketing teams on go-to-market strategies",
-      "Represent the company at industry events and networking forums"
-    ],
-    achievements: [
-      "Onboarded 20+ new business partners in the first quarter",
-      "Built a sales pipeline worth ₹1Cr+ through strategic outreach",
-      "Closed 3 enterprise deals worth ₹75L in the first 6 months",
-      "Expanded company presence into 2 new geographic markets",
-      "Generated 40% of company's annual revenue through new partnerships",
-      "Reduced partner onboarding time by 30% through process improvements"
-    ]
-  },
-  "HR Executive": {
-    responsibilities: [
-      "Manage end-to-end recruitment including sourcing, screening, and onboarding",
-      "Coordinate with hiring managers to understand role requirements",
-      "Administer payroll, attendance, and leave management systems",
-      "Organise employee engagement activities and team events",
-      "Maintain HR records and ensure compliance with labour laws",
-      "Handle employee grievances and support conflict resolution"
-    ],
-    achievements: [
-      "Reduced time-to-hire by 20% by streamlining the interview process",
-      "Successfully hired 50+ employees across departments in 6 months",
-      "Improved employee satisfaction score from 6.2 to 8.1 out of 10",
-      "Reduced attrition rate from 18% to 11% through engagement initiatives",
-      "Automated payroll processing saving 15 hours per month",
-      "Designed onboarding programme reducing new-hire ramp-up time by 25%"
-    ]
-  },
-  "Accountant": {
-    responsibilities: [
-      "Prepare and maintain accurate financial statements, ledgers, and records",
-      "File GST, TDS, and income tax returns in compliance with regulations",
-      "Reconcile bank statements and resolve discrepancies promptly",
-      "Process accounts payable and receivable transactions",
-      "Assist in annual audit preparation and coordinate with auditors",
-      "Prepare monthly MIS reports for management review"
-    ],
-    achievements: [
-      "Reduced month-end closing time from 5 days to 2 days",
-      "Identified ₹8L in tax savings through proactive tax planning",
-      "Achieved zero audit findings for 2 consecutive years",
-      "Improved accounts receivable collection cycle by 15 days",
-      "Automated invoice processing reducing manual errors by 80%",
-      "Recovered ₹12L in outstanding dues through systematic follow-ups"
-    ]
-  },
-  "Graphic Designer": {
-    responsibilities: [
-      "Create visual assets for social media, print, and digital campaigns",
-      "Design brand identities including logos, typography, and colour palettes",
-      "Produce marketing collaterals including brochures, banners, and decks",
-      "Collaborate with marketing and product teams to deliver on-brand designs",
-      "Maintain brand consistency across all communication materials",
-      "Manage multiple design projects simultaneously and meet deadlines"
-    ],
-    achievements: [
-      "Redesigned company brand identity increasing brand recognition by 40%",
-      "Created a campaign visual that achieved 2M+ impressions on social media",
-      "Delivered 200+ design assets in Q1 with 100% on-time delivery",
-      "Reduced design turnaround time by 30% by building a reusable asset library",
-      "Won internal 'Best Creative' award for Q2 campaign design",
-      "Produced a product catalogue that contributed to 15% sales increase"
-    ]
-  },
-  "UI/UX Designer": {
-    responsibilities: [
-      "Conduct user research, surveys, and usability testing to inform design",
-      "Create wireframes, user flows, prototypes, and high-fidelity mockups in Figma",
-      "Collaborate with developers to ensure pixel-perfect implementation",
-      "Build and maintain a comprehensive design system for consistent UI",
-      "Analyse user behaviour data to identify UX improvement opportunities",
-      "Present design concepts and rationale to stakeholders"
-    ],
-    achievements: [
-      "Improved user retention by 25% through data-driven UX redesign",
-      "Reduced user drop-off on checkout flow by 35%",
-      "Shipped a complete app redesign in 8 weeks with zero usability regressions",
-      "Design system adopted across 4 product teams reducing design time by 40%",
-      "Increased NPS score from 32 to 58 through UX improvements",
-      "Won a design award for best mobile UX at a regional design conference"
-    ]
-  },
-  "Mechanical Engineer": {
-    responsibilities: [
-      "Design mechanical components and assemblies using SolidWorks and AutoCAD",
-      "Conduct stress analysis, thermal analysis, and FEA simulations",
-      "Coordinate with manufacturing team to ensure design feasibility",
-      "Prepare technical drawings, BOMs, and specifications for production",
-      "Perform root cause analysis and implement corrective actions",
-      "Ensure designs comply with industry standards and safety regulations"
-    ],
-    achievements: [
-      "Reduced material costs by 15% through design optimisation",
-      "Improved product lifespan by 30% through material upgrade",
-      "Led a design project that reduced assembly time by 20%",
-      "Successfully delivered 5 product prototypes within tight deadlines",
-      "Identified and resolved a critical design flaw saving ₹20L in recalls",
-      "Achieved ISO 9001 certification for design processes"
-    ]
-  },
-  "Civil Engineer": {
-    responsibilities: [
-      "Supervise construction activities and ensure adherence to project plans",
-      "Prepare structural drawings, BOQs, and cost estimates",
-      "Coordinate with contractors, consultants, and vendors on-site",
-      "Conduct quality checks and material testing at various project stages",
-      "Ensure compliance with IS codes, safety standards, and environmental norms",
-      "Monitor project timelines and report progress to senior management"
-    ],
-    achievements: [
-      "Delivered a ₹5Cr construction project 2 weeks ahead of schedule",
-      "Reduced material waste by 12% through improved procurement planning",
-      "Supervised construction of 150+ residential units without safety incidents",
-      "Saved ₹8L in project costs through value engineering",
-      "Successfully obtained all statutory approvals within planned timelines",
-      "Reduced rework rate by 25% through rigorous quality inspection"
-    ]
-  },
-  "Operations Executive": {
-    responsibilities: [
-      "Manage day-to-day operations and ensure smooth workflow across teams",
-      "Coordinate with vendors and ensure timely procurement of resources",
-      "Prepare MIS reports, dashboards, and operational metrics for leadership",
-      "Implement and improve standard operating procedures (SOPs)",
-      "Monitor SLAs, KPIs, and escalation matrices for service delivery",
-      "Identify operational inefficiencies and drive process improvement projects"
-    ],
-    achievements: [
-      "Reduced operational costs by 20% through vendor renegotiation",
-      "Improved team efficiency by 30% through SOP implementation",
-      "Reduced SLA breaches by 45% through real-time monitoring",
-      "Streamlined vendor onboarding process from 15 days to 5 days",
-      "Managed operations for a team of 50+ across 3 locations",
-      "Launched a process automation project saving 20 hours/week"
-    ]
-  },
-  "Banking Executive": {
-    responsibilities: [
-      "Handle customer account opening, KYC verification, and documentation",
-      "Process loan applications and coordinate with credit team for approvals",
-      "Cross-sell banking products including insurance, mutual funds, and FDs",
-      "Maintain accurate records and ensure regulatory compliance",
-      "Resolve customer queries and complaints within defined TAT",
-      "Conduct financial need analysis and recommend suitable products"
-    ],
-    achievements: [
-      "Achieved 110% of cross-selling targets for 3 consecutive quarters",
-      "Processed 200+ loan applications with zero compliance errors",
-      "Reduced customer complaint resolution time by 40%",
-      "Onboarded 50+ HNI customers through targeted relationship building",
-      "Ranked among top 5% performers in the regional branch network",
-      "Contributed to branch achieving its annual CASA target 2 months early"
-    ]
-  },
-  "Relationship Manager": {
-    responsibilities: [
-      "Manage a portfolio of HNI/corporate clients and their banking needs",
-      "Conduct regular portfolio reviews and investment planning discussions",
-      "Identify cross-sell and upsell opportunities within the client portfolio",
-      "Acquire new clients through referrals, networking, and outreach",
-      "Ensure compliance with KYC, AML, and regulatory requirements",
-      "Coordinate with product teams to resolve client issues promptly"
-    ],
-    achievements: [
-      "Managed a portfolio of 150+ HNI clients with AUM of ₹50Cr+",
-      "Achieved 130% of quarterly revenue targets consistently",
-      "Acquired 20+ new HNI clients generating ₹8Cr in fresh deposits",
-      "Maintained zero client attrition for 2 consecutive years",
-      "Increased wallet share by 35% through proactive cross-selling",
-      "Won 'Best Relationship Manager' award for the northern region"
-    ]
-  },
-  "General Fresher": {
-    responsibilities: [
-      "Assist senior team members with day-to-day tasks and deliverables",
-      "Conduct research and compile data for team projects",
-      "Prepare presentations, reports, and documentation as required",
-      "Coordinate with internal teams to support project execution",
-      "Learn and apply domain knowledge gained through academic training",
-      "Participate in training programmes and team meetings actively"
-    ],
-    achievements: [
-      "Completed final year project with distinction, scoring 9.1/10 CGPA",
-      "Won 1st place at college-level technical fest/hackathon",
-      "Completed 3 relevant online certifications during academic tenure",
-      "Served as student coordinator for a 500+ attendee college event",
-      "Published a research paper / article on relevant domain topic",
-      "Received appreciation from internship manager for proactive attitude"
-    ]
-  },
-  "Engineering Intern": {
-    responsibilities: [
-      "Assist senior engineers in designing, coding, and testing software modules",
-      "Participate in daily standups, sprint planning, and team meetings",
-      "Document technical processes and contribute to internal knowledge base",
-      "Write and execute test cases to validate software functionality",
-      "Research and evaluate new tools and technologies for team adoption",
-      "Support production deployments and monitor post-deployment issues"
-    ],
-    achievements: [
-      "Delivered an assigned feature end-to-end within the internship period",
-      "Identified and fixed 12 bugs reducing open ticket count by 20%",
-      "Built an internal tool that saved the team 5 hours per week",
-      "Received a pre-placement offer (PPO) at the end of internship",
-      "Achieved top intern ranking in performance review",
-      "Completed 2 additional certifications during the internship period"
-    ]
-  }
-}
-
-const getSuggestions = (jobTitle) => {
-  if (!jobTitle) return { responsibilities: [], achievements: [] }
-  if (SUGGESTIONS[jobTitle]) return SUGGESTIONS[jobTitle]
-  const key = Object.keys(SUGGESTIONS).find(k =>
+const getSuggestions = (jobTitle, roleContent) => {
+  if (!jobTitle || !roleContent) return { responsibilities: [], achievements: [] }
+  if (roleContent[jobTitle]) return roleContent[jobTitle]
+  const key = Object.keys(roleContent).find(k =>
     jobTitle.toLowerCase().includes(k.toLowerCase()) ||
     k.toLowerCase().includes(jobTitle.toLowerCase())
   )
-  return key ? SUGGESTIONS[key] : SUGGESTIONS["General Fresher"]
+  return key ? roleContent[key] : { responsibilities: [], achievements: [] }
 }
 
+
+
+// ─── HELPER: Render text as bullet list ───────────────────────────────────────
+const BulletList = ({ text, className = '' }) => {
+  if (!text) return null
+  const lines = text.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+  if (!lines.length) return null
+  return (
+    <ul style={{ listStyleType: 'disc', paddingLeft: '1.1em', margin: 0 }} className={className}>
+      {lines.map((line, i) => <li key={i} style={{ marginBottom: '1px' }}>{line}</li>)}
+    </ul>
+  )
+}
 
 // ─── COMPONENT: Searchable Dropdown ──────────────────────────────────────────
 function SearchableDropdown({ options, value, onChange, placeholder, label }) {
@@ -1247,6 +803,8 @@ function Builder() {
   const [summary, setSummary] = useState('')
 
   const [workExperiences, setWorkExperiences] = useState([])
+  const [editingWorkIdx, setEditingWorkIdx] = useState(null)
+  const [roleContent, setRoleContent] = useState(null)
   const [currentWork, setCurrentWork] = useState({
     company: '', jobTitle: '', startMonth: '', startYear: '',
     endMonth: '', endYear: '', isPresent: false,
@@ -1292,6 +850,14 @@ function Builder() {
   const [showSkillSuggestions, setShowSkillSuggestions] = useState(false)
   const [skillSearch, setSkillSearch] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+
+  // Lazy-load role suggestions on mount
+  useEffect(() => {
+    fetch('/roleContent.json')
+      .then(r => r.json())
+      .then(data => setRoleContent(data))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     try {
@@ -1371,8 +937,21 @@ function Builder() {
 
   const addWorkExperience = () => {
     if (!validateWork()) return
-    setWorkExperiences([...workExperiences, currentWork])
+    if (editingWorkIdx !== null) {
+      const updated = [...workExperiences]
+      updated[editingWorkIdx] = currentWork
+      setWorkExperiences(updated)
+      setEditingWorkIdx(null)
+    } else {
+      setWorkExperiences([...workExperiences, currentWork])
+    }
     setCurrentWork({ company: '', jobTitle: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, responsibilities: '', achievements: '' })
+    setWorkErrors({}); setDateError(''); setShowSuggestions(null)
+  }
+
+  const startEditWork = (i) => {
+    setCurrentWork({ ...workExperiences[i] })
+    setEditingWorkIdx(i)
     setWorkErrors({}); setDateError(''); setShowSuggestions(null)
   }
 
@@ -1579,8 +1158,8 @@ function Builder() {
           <p className="text-base text-gray-600">{phone || '+91 98765 43210'}</p>
         </div>
         {summary && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-4 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-700 leading-relaxed">{summary}</p></div>)}
-        {workExperiences.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-blue-600 font-semibold mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-blue-600 font-semibold mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Projects</h3><div className="space-y-5">{projects.map((proj, i) => (<div key={i}><p className="text-lg font-bold text-gray-900 mb-1">🚀 {proj.name}</p>{proj.description && <p className="text-base text-gray-700 leading-relaxed mb-1">{proj.description}</p>}{proj.link && <p className="text-sm text-blue-500"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Education</h3><div className="space-y-5">{educationList.map((edu, i) => (<div key={i}><p className="text-lg font-bold text-gray-900 mb-1">{edu.school}</p><p className="text-base text-gray-700 mb-1">{edu.degree}</p><p className="text-sm text-gray-500 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? <span className="ml-2 text-blue-600 font-medium">{edu.score}</span> : null}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-xl font-bold text-blue-600 mb-5 uppercase tracking-wide">Skills</h3><div className="space-y-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between"><span className="text-base font-semibold text-gray-800">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-3 h-3 rounded-full ${sk.level>=n?'bg-blue-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -1598,8 +1177,8 @@ function Builder() {
       <div id="resume-preview" className="border-t-4 border-gray-900 pt-8">
         <div className="mb-10 text-center"><h3 className="text-5xl font-bold text-gray-900 mb-3 uppercase tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center justify-center gap-3 text-base text-gray-700"><span>{email || 'your.email@example.com'}</span><span className="font-bold">•</span><span>{phone || '+91 98765 43210'}</span></div></div>
         {summary && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Summary</h3><p className="text-base text-gray-800 leading-relaxed">{summary}</p></div>)}
-        {workExperiences.length > 0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="font-bold text-gray-900 text-lg mb-1">{exp.jobTitle}</p><p className="text-base text-gray-800 italic mb-2">{exp.company} | {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-800 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-800 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="font-bold text-gray-900 text-lg mb-1">{exp.jobTitle}</p><p className="text-base text-gray-800 italic mb-2">{exp.company} | {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Projects</h3><div className="space-y-4">{projects.map((proj, i) => (<div key={i}><p className="font-bold text-gray-900 text-base">🚀 {proj.name}</p>{proj.description && <p className="text-base text-gray-800 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-gray-600 italic mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Education</h3><div className="space-y-4">{educationList.map((edu, i) => (<div key={i}><p className="font-bold text-gray-900 text-base">{edu.school}</p><p className="text-base text-gray-800">{edu.degree} | {formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Skills</h3><div className="grid grid-cols-2 gap-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between"><span className="text-base text-gray-800 font-medium">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-2.5 h-2.5 rounded-full ${sk.level>=n?'bg-gray-800':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -1617,8 +1196,8 @@ function Builder() {
       <div id="resume-preview" className="border-t border-gray-300 pt-10">
         <div className="mb-12"><h3 className="text-6xl font-light text-gray-900 mb-4 tracking-tight">{name || 'Your Name'}</h3><p className="text-base text-gray-600">{email || 'your.email@example.com'}</p><p className="text-base text-gray-600">{phone || '+91 98765 43210'}</p></div>
         {summary && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-widest uppercase">About</h3><p className="text-base text-gray-700 leading-relaxed font-light">{summary}</p></div>)}
-        {workExperiences.length > 0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Experience</h3><div className="space-y-8">{workExperiences.map((exp, i) => (<div key={i}><p className="text-lg font-medium text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-gray-600 font-light mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-light">{formatDate(exp.startMonth, exp.startYear)} — {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-700 whitespace-pre-line leading-relaxed font-light">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-700 whitespace-pre-line leading-relaxed font-light">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Experience</h3><div className="space-y-8">{workExperiences.map((exp, i) => (<div key={i}><p className="text-lg font-medium text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-gray-600 font-light mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-light">{formatDate(exp.startMonth, exp.startYear)} — {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Projects</h3><div className="space-y-5">{projects.map((proj, i) => (<div key={i}><p className="text-base font-medium text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 font-light mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-gray-400 font-light mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Education</h3><div className="space-y-5">{educationList.map((edu, i) => (<div key={i}><p className="text-base font-medium text-gray-900">{edu.school}</p><p className="text-base text-gray-700 font-light">{edu.degree}</p><p className="text-sm text-gray-500 font-light">{formatDate(edu.startMonth, edu.startYear)} — {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-sm font-semibold text-gray-900 mb-5 tracking-widest uppercase">Skills</h3><div className="space-y-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between"><span className="text-base text-gray-700 font-light">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-2.5 h-2.5 rounded-full ${sk.level>=n?'bg-gray-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -1636,8 +1215,8 @@ function Builder() {
       <div id="resume-preview" className="bg-white rounded-2xl p-8 shadow-xl">
         <div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 mb-4 leading-tight">{name || 'Your Name'}</h3><p className="text-base text-gray-700 font-medium">{email || 'your.email@example.com'}</p><p className="text-base text-gray-700 font-medium">{phone || '+91 98765 43210'}</p></div>
         {summary && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-5 border-l-4 border-purple-500"><h3 className="text-lg font-bold text-purple-900 mb-3 uppercase tracking-wide">💫 About Me</h3><p className="text-base text-gray-800 leading-relaxed">{summary}</p></div></div>)}
-        {workExperiences.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-lg font-bold text-purple-600 mb-6 uppercase tracking-wide flex items-center"><span className="mr-2">💼</span> Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-l-4 border-pink-500"><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-purple-600 font-bold mb-1">{exp.company}</p><p className="text-sm text-gray-600 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-800 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-800 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-lg font-bold text-purple-600 mb-6 uppercase tracking-wide flex items-center"><span className="mr-2">💼</span> Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-l-4 border-pink-500"><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-purple-600 font-bold mb-1">{exp.company}</p><p className="text-sm text-gray-600 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-lg font-bold text-purple-600 mb-6 uppercase tracking-wide flex items-center"><span className="mr-2">🚀</span> Projects</h3><div className="space-y-5">{projects.map((proj, i) => (<div key={i} className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5 border-l-4 border-indigo-500"><p className="text-lg font-bold text-gray-900 mb-1">{proj.name}</p>{proj.description && <p className="text-base text-gray-800 mb-1">{proj.description}</p>}{proj.link && <p className="text-sm text-indigo-500"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-lg font-bold text-purple-600 mb-6 uppercase tracking-wide flex items-center"><span className="mr-2">🎓</span> Education</h3><div className="space-y-5">{educationList.map((edu, i) => (<div key={i} className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl p-5 border-l-4 border-orange-500"><p className="text-lg font-bold text-gray-900 mb-1">{edu.school}</p><p className="text-base text-gray-800 mb-1">{edu.degree}</p><p className="text-sm text-gray-600 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-lg font-bold text-purple-600 mb-5 uppercase tracking-wide flex items-center"><span className="mr-2">⚡</span> Skills</h3><div className="space-y-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 rounded-lg"><span className="text-base font-bold text-gray-800">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-3 h-3 rounded-full ${sk.level>=n?'bg-purple-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -1655,8 +1234,8 @@ function Builder() {
       <div id="resume-preview" className="border-t-2 border-blue-600 pt-8">
         <div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-4xl font-bold text-gray-900 mb-3 uppercase tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center gap-4 text-base text-gray-700"><span>✉️ {email || 'your.email@example.com'}</span><span className="text-gray-400">|</span><span>📱 {phone || '+91 98765 43210'}</span></div></div>
         {summary && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-800 leading-relaxed ml-5">{summary}</p></div>)}
-        {workExperiences.length > 0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Professional Experience</h3><div className="space-y-6 ml-5">{workExperiences.map((exp, i) => (<div key={i}><div className="flex justify-between items-baseline mb-2"><p className="text-xl font-bold text-gray-900">{exp.jobTitle}</p><p className="text-sm text-gray-600 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p></div><p className="text-base text-blue-600 font-semibold mb-3">{exp.company}</p>{exp.responsibilities && <div className="text-base text-gray-800 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-800 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Professional Experience</h3><div className="space-y-6 ml-5">{workExperiences.map((exp, i) => (<div key={i}><div className="flex justify-between items-baseline mb-2"><p className="text-xl font-bold text-gray-900">{exp.jobTitle}</p><p className="text-sm text-gray-600 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p></div><p className="text-base text-blue-600 font-semibold mb-3">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Projects</h3><div className="space-y-5 ml-5">{projects.map((proj, i) => (<div key={i}><p className="text-lg font-bold text-gray-900">🚀 {proj.name}</p>{proj.description && <p className="text-base text-gray-800 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-blue-500 mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Education</h3><div className="space-y-5 ml-5">{educationList.map((edu, i) => (<div key={i}><p className="text-lg font-bold text-gray-900">{edu.school}</p><p className="text-base text-gray-800 mb-1">{edu.degree}</p><p className="text-sm text-gray-600 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-lg font-bold text-blue-600 mb-5 uppercase tracking-wide">Core Competencies</h3><div className="grid grid-cols-2 gap-2 ml-5">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between"><div className="flex items-center"><span className="w-2 h-2 bg-blue-600 rounded-full mr-3 inline-block"></span><span className="text-base text-gray-800">{sk.name}</span></div><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-2.5 h-2.5 rounded-full ${sk.level>=n?'bg-blue-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -1685,8 +1264,8 @@ function Builder() {
         <div style={{float:"left", width:"67%"}} className="p-8">
           <div className="mb-8"><h3 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">{name || 'Your Name'}</h3><div className="h-1 w-24 bg-gradient-to-r from-green-600 to-teal-600"></div></div>
           {summary && (<div className="mb-8"><h3 className="text-lg font-bold text-green-700 mb-3 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-700 leading-relaxed">{summary}</p></div>)}
-          {workExperiences.length > 0 && (<div className="mb-8"><h3 className="text-lg font-bold text-green-700 mb-5 uppercase tracking-wide">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-green-600 font-semibold mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-green-200"><p className="text-xs font-bold text-green-800 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+          {workExperiences.length > 0 && (<div className="mb-8"><h3 className="text-lg font-bold text-green-700 mb-5 uppercase tracking-wide">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i}><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-green-600 font-semibold mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-green-200"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
           {projects.length > 0 && (<div className="mb-8"><h3 className="text-lg font-bold text-green-700 mb-5 uppercase tracking-wide">Projects</h3><div className="space-y-4">{projects.map((proj, i) => (<div key={i}><p className="text-base font-bold text-gray-900">🚀 {proj.name}</p>{proj.description && <p className="text-sm text-gray-700 mt-1">{proj.description}</p>}{proj.link && <p className="text-xs text-green-600 mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         </div>
       </div>
@@ -1699,8 +1278,8 @@ function Builder() {
       <div id="resume-preview" className="bg-white p-10 rounded-lg shadow-xl">
         <div className="text-center mb-10 pb-8 border-b-2 border-rose-200"><h3 className="text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center justify-center gap-3 text-base text-gray-600 italic"><span>{email || 'your.email@example.com'}</span><span className="text-rose-400">◆</span><span>{phone || '+91 98765 43210'}</span></div></div>
         {summary && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-4 text-center italic">Professional Profile</h3><p className="text-base text-gray-700 leading-relaxed text-center italic">{summary}</p></div>)}
-        {workExperiences.length > 0 && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-6 text-center italic">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i} className="border-l-4 border-rose-300 pl-6"><p className="text-xl font-serif font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-rose-600 font-semibold mb-1 italic">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-6 text-center italic">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i} className="border-l-4 border-rose-300 pl-6"><p className="text-xl font-serif font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-rose-600 font-semibold mb-1 italic">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-6 text-center italic">Projects</h3><div className="space-y-5">{projects.map((proj, i) => (<div key={i} className="border-l-4 border-rose-200 pl-6"><p className="text-lg font-serif font-bold text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 italic mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-rose-400 mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-6 text-center italic">Education</h3><div className="space-y-5">{educationList.map((edu, i) => (<div key={i} className="border-l-4 border-orange-300 pl-6"><p className="text-lg font-serif font-bold text-gray-900">{edu.school}</p><p className="text-base text-gray-700 mb-1 italic">{edu.degree}</p><p className="text-sm text-gray-500 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? <span className="ml-2 text-blue-600 font-medium">{edu.score}</span> : null}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-lg font-serif font-bold text-rose-600 mb-5 text-center italic">Core Competencies</h3><div className="space-y-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-rose-50 to-orange-50 rounded-lg border border-rose-100"><span className="text-base text-rose-800 italic font-medium">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-3 h-3 rounded-full ${sk.level>=n?'bg-rose-400':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -1718,8 +1297,8 @@ function Builder() {
       <div id="resume-preview" className="bg-white p-10 rounded-xl">
         <div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 mb-3 leading-tight">{name || 'Your Name'}</h3><div className="flex items-center gap-3 text-base text-gray-600 font-mono"><span className="text-violet-600">$</span><span>{email || 'your.email@example.com'}</span><span className="text-violet-400">|</span><span>{phone || '+91 98765 43210'}</span></div></div>
         {summary && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-4 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>README.md</h3><div className="bg-gray-50 p-5 rounded-lg border-l-4 border-violet-500 font-mono text-sm"><p className="text-gray-700 leading-relaxed">{summary}</p></div></div>)}
-        {workExperiences.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-6 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 p-5 rounded-lg border-l-4 border-purple-500"><p className="text-xl font-bold text-gray-900 mb-1 font-mono">{exp.jobTitle}</p><p className="text-base text-violet-600 font-semibold mb-1 font-mono">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-mono"><span className="text-violet-400">{'['}</span>{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}<span className="text-violet-400">{']'}</span></p>{exp.responsibilities && <div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-base text-gray-700 whitespace-pre-line leading-relaxed">{exp.achievements}</div></div>}</div>))}</div></div>)}
+        {workExperiences.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-6 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) => (<div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 p-5 rounded-lg border-l-4 border-purple-500"><p className="text-xl font-bold text-gray-900 mb-1 font-mono">{exp.jobTitle}</p><p className="text-base text-violet-600 font-semibold mb-1 font-mono">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-mono"><span className="text-violet-400">{'['}</span>{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}<span className="text-violet-400">{']'}</span></p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
+{exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-6 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Projects</h3><div className="space-y-5">{projects.map((proj, i) => (<div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 p-5 rounded-lg border-l-4 border-violet-300"><p className="text-lg font-bold text-gray-900 font-mono">🚀 {proj.name}</p>{proj.description && <p className="text-base text-gray-700 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-violet-500 font-mono mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {educationList.length > 0 && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-6 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Education</h3><div className="space-y-5">{educationList.map((edu, i) => (<div key={i} className="bg-gray-50 p-5 rounded-lg border-l-4 border-violet-400"><p className="text-lg font-bold text-gray-900 font-mono">{edu.school}</p><p className="text-base text-gray-700 mb-1">{edu.degree}</p><p className="text-sm text-gray-500 font-mono">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
         {skillsList.length > 0 && (<div className="mb-6"><h3 className="text-lg font-bold text-violet-600 mb-5 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Tech Stack</h3><div className="space-y-2">{skillsList.map((sk,i) => (<div key={i} className="flex items-center justify-between bg-gray-900 px-4 py-2 rounded-md"><span className="text-base text-violet-300 font-mono font-bold">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n => <span key={n} className={`w-3 h-3 rounded-sm ${sk.level>=n?'bg-violet-400':'bg-gray-700'}`}></span>)}</div></div>))}</div></div>)}
@@ -1777,8 +1356,8 @@ const GreenSidebarTemplate = () => (
             <div className="space-y-4">{workExperiences.map((exp,i) => (<div key={i} className="flex gap-3">
               <div className="text-xs text-gray-500 w-24 flex-shrink-0 mt-1">{formatDate(exp.startMonth, exp.startYear)}<br/>–<br/>{formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</div>
               <div><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-xs text-green-700 italic mb-1">{exp.company}</p>
-              {exp.responsibilities && <div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-              {exp.achievements && <div className="mt-1 pt-1 border-t border-gray-100"><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div>
+              {exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}
+              {exp.achievements && <div className="mt-1 pt-1 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div>
             </div>))}</div>
           </div>)}
           {projects.length > 0 && (<div className="mb-6 pb-4 border-b border-gray-200">
@@ -1835,8 +1414,8 @@ const GoldHeaderTemplate = () => (
           <div className="space-y-4">{workExperiences.map((exp,i) => (<div key={i}>
             <div className="flex justify-between items-start"><p className="font-bold text-gray-900">{exp.jobTitle}</p><span className="text-xs text-gray-500 whitespace-nowrap ml-2">{formatDate(exp.startMonth, exp.startYear)} – {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</span></div>
             <p className="text-sm text-amber-700 italic mb-1">{exp.company}</p>
-            {exp.responsibilities && <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-            {exp.achievements && <div className="mt-2 pt-1 border-t border-amber-100"><p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-sm text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}
+            {exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}
+            {exp.achievements && <div className="mt-2 pt-1 border-t border-amber-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}
           </div>))}</div>
         </div>)}
         {projects.length > 0 && (<div className="mb-5">
@@ -1899,8 +1478,8 @@ const ClassicSerifTemplate = () => (
         <div className="space-y-4">{workExperiences.map((exp,i) => (<div key={i}>
           <div className="flex justify-between"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-xs text-gray-500">{formatDate(exp.startMonth, exp.startYear)} – {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p></div>
           <p className="text-sm text-gray-600 italic mb-1">{exp.company}</p>
-          {exp.responsibilities && <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-          {exp.achievements && <div className="mt-2 pt-1 border-t border-gray-200"><p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-sm text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}
+          {exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}
+          {exp.achievements && <div className="mt-2 pt-1 border-t border-gray-200"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}
         </div>))}</div>
       </div>)}
       {projects.length > 0 && (<div className="mb-4 pb-3 border-b border-gray-300">
@@ -1963,8 +1542,8 @@ const CoralTemplate = () => (
         <div className="space-y-4">{workExperiences.map((exp,i) => (<div key={i} className="pl-3 border-l-2 border-orange-200">
           <div className="flex justify-between items-start"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><span className="text-xs text-gray-400 whitespace-nowrap ml-2">{formatDate(exp.startMonth, exp.startYear)} – {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</span></div>
           <p className="text-xs text-orange-600 italic mb-1">{exp.company}</p>
-          {exp.responsibilities && <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}
-          {exp.achievements && <div className="mt-2 pt-1 border-t border-orange-100"><p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Key Achievements</p><div className="text-sm text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}
+          {exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}
+          {exp.achievements && <div className="mt-2 pt-1 border-t border-orange-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}
         </div>))}</div>
       </div>)}
       {projects.length > 0 && (<div className="mb-5">
@@ -2013,7 +1592,7 @@ const AmberTemplate = () => (
       </div>
       <div className="px-8 py-6">
         {summary&&<p className="text-gray-700 text-sm leading-relaxed mb-6 border-l-4 border-amber-400 pl-4 italic">{summary}</p>}
-        {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-amber-600 mb-3 border-b border-amber-200 pb-1 uppercase tracking-wide">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-28 flex-shrink-0 text-xs text-gray-500 pt-0.5 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-amber-700 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities&&<div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}{exp.achievements&&<div className="mt-1 pt-1 border-t border-amber-100"><p className="text-xs font-bold text-amber-700 uppercase mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div></div>))}</div></div>)}
+        {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-amber-600 mb-3 border-b border-amber-200 pb-1 uppercase tracking-wide">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-28 flex-shrink-0 text-xs text-gray-500 pt-0.5 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-amber-700 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pt-1 border-t border-amber-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div></div>))}</div></div>)}
         {educationList.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-amber-600 mb-3 border-b border-amber-200 pb-1 uppercase tracking-wide">Education</h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i} className="flex gap-5"><div className="w-28 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(edu.startMonth,edu.startYear)} -<br/>{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</div><div><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-amber-700 text-xs italic">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500 mt-0.5">{edu.score}</p>}</div></div>))}</div></div>)}
         {projects.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-amber-600 mb-3 border-b border-amber-200 pb-1 uppercase tracking-wide">Projects</h2><div className="space-y-2">{projects.map((proj,i)=>(<div key={i}><p className="font-bold text-gray-900 text-sm">{proj.name}</p>{proj.description&&<p className="text-xs text-gray-700 mt-0.5">{proj.description}</p>}{proj.link&&<p className="text-xs mt-0.5"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
         {skillsList.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-amber-600 mb-3 border-b border-amber-200 pb-1 uppercase tracking-wide">Skills</h2><div className="grid grid-cols-3 gap-x-6 gap-y-3">{skillsList.map((sk,i)=>(<div key={i}><p className="text-xs font-medium text-gray-800 mb-1">{sk.name}</p><div className="h-1.5 bg-gray-200 rounded-full"><div className="h-1.5 bg-amber-500 rounded-full" style={{width:`${sk.level*20}%`}}></div></div></div>))}</div></div>)}
@@ -2039,7 +1618,7 @@ const Serif2Template = () => (
         </div>
       </div>
       {summary&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-3 flex items-center gap-2"><span className="flex-1 h-px bg-gray-300"></span>Professional Summary<span className="flex-1 h-px bg-gray-300"></span></h2><p className="text-sm text-gray-700 leading-relaxed">{summary}</p></div>)}
-      {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-4 flex items-center gap-2"><span className="flex-1 h-px bg-gray-300"></span>Work History<span className="flex-1 h-px bg-gray-300"></span></h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i}><div className="flex justify-between items-baseline mb-0.5"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}, <span className="text-xs font-normal text-gray-500">{formatDate(exp.startMonth,exp.startYear)} - {formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</span></p></div><p className="font-bold text-gray-700 text-xs mb-1">{exp.company}</p>{exp.responsibilities&&<div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed pl-2">{exp.responsibilities}</div>}{exp.achievements&&<div className="mt-1 pl-2"><p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div>))}</div></div>)}
+      {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-4 flex items-center gap-2"><span className="flex-1 h-px bg-gray-300"></span>Work History<span className="flex-1 h-px bg-gray-300"></span></h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i}><div className="flex justify-between items-baseline mb-0.5"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}, <span className="text-xs font-normal text-gray-500">{formatDate(exp.startMonth,exp.startYear)} - {formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</span></p></div><p className="font-bold text-gray-700 text-xs mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pl-2"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div>))}</div></div>)}
       {skillsList.length>0&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-4 flex items-center gap-2"><span className="flex-1 h-px bg-gray-300"></span>Skills<span className="flex-1 h-px bg-gray-300"></span></h2><div className="grid grid-cols-3 gap-x-6 gap-y-3">{skillsList.map((sk,i)=>(<div key={i}><p className="text-xs font-medium text-gray-800 mb-1">{sk.name}</p><div className="flex gap-0.5">{[1,2,3,4,5].map(n=><div key={n} className={`h-2 flex-1 rounded-sm ${sk.level>=n?'bg-gray-600':'bg-gray-200'}`}></div>)}</div></div>))}</div></div>)}
       {certifications.length>0&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-3 flex items-center gap-2"><span className="flex-1 h-px bg-gray-300"></span>Certifications<span className="flex-1 h-px bg-gray-300"></span></h2><ul className="space-y-1">{certifications.map((cert,i)=>(<li key={i} className="flex gap-2 text-xs text-gray-700"><span>•</span><span><span className="font-semibold">{cert.name}</span>{cert.issuer&&` — ${cert.issuer}`}{cert.year&&` (${cert.year})`}</span></li>))}</ul></div>)}
       {educationList.length>0&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-4 flex items-center gap-2"><span className="flex-1 h-px bg-gray-300"></span>Education<span className="flex-1 h-px bg-gray-300"></span></h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i}><div className="flex justify-between"><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-xs text-gray-500">{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</p></div><p className="font-bold text-gray-700 text-xs">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500">{edu.score}</p>}</div>))}</div></div>)}
@@ -2060,7 +1639,7 @@ const HexagonTemplate = () => (
         <div><h1 className="text-3xl font-bold text-rose-500">{name||'Your Name'}</h1><div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">{email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.github}</a>}</div></div>
       </div>
       {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-6">{summary}</p>}
-      {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-24 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-rose-400 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities&&<div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}{exp.achievements&&<div className="mt-1 pt-1 border-t border-rose-100"><p className="text-xs font-bold text-rose-500 uppercase mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div></div>))}</div></div>)}
+      {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-24 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-rose-400 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pt-1 border-t border-rose-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div></div>))}</div></div>)}
       {skillsList.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Skills</h2><div className="grid grid-cols-3 gap-x-6 gap-y-3">{skillsList.map((sk,i)=>(<div key={i}><p className="text-xs font-medium text-gray-800 mb-1">{sk.name}</p><div className="flex gap-1">{[1,2,3,4,5].map(n=><span key={n} className={`w-3 h-3 rounded-full ${sk.level>=n?'bg-rose-400':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
       {certifications.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Certifications</h2><ul className="space-y-1">{certifications.map((cert,i)=>(<li key={i} className="flex gap-2 text-xs text-gray-700"><span className="text-rose-400">•</span><span><span className="font-semibold">{cert.name}</span>{cert.issuer&&` — ${cert.issuer}`}{cert.year&&` (${cert.year})`}</span></li>))}</ul></div>)}
       {educationList.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Education</h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i} className="flex gap-5"><div className="w-24 flex-shrink-0 text-xs text-gray-500">{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</div><div><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-rose-400 text-xs italic">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500">{edu.score}</p>}</div></div>))}</div></div>)}
@@ -2083,7 +1662,7 @@ const NavyTemplate = () => (
       {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-6 border-l-4 border-blue-900 pl-3">{summary}</p>}
       {educationList.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">🎓 Education</h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i} className="flex gap-5"><div className="w-20 flex-shrink-0 text-xs text-gray-500">{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</div><div><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-blue-800 text-xs italic">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500">{edu.score}</p>}</div></div>))}</div></div>)}
       {skillsList.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">🔧 Skills</h2><div className="grid grid-cols-3 gap-x-6 gap-y-3">{skillsList.map((sk,i)=>(<div key={i}><p className="text-xs font-medium text-gray-800 mb-1">{sk.name}</p><div className="flex gap-0.5">{[1,2,3,4,5].map(n=><div key={n} className={`h-2.5 w-5 ${sk.level>=n?'bg-blue-900':'bg-gray-200'}`}></div>)}</div></div>))}</div></div>)}
-      {workExperiences.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">💼 Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-20 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-blue-800 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities&&<div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}{exp.achievements&&<div className="mt-1 pt-1 border-t border-blue-100"><p className="text-xs font-bold text-blue-800 uppercase mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div></div>))}</div></div>)}
+      {workExperiences.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">💼 Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-20 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-blue-800 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pt-1 border-t border-blue-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div></div>))}</div></div>)}
       {projects.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">🚀 Projects</h2><div className="space-y-2">{projects.map((proj,i)=>(<div key={i}><p className="font-bold text-gray-900 text-sm">{proj.name}</p>{proj.description&&<p className="text-xs text-gray-700">{proj.description}</p>}{proj.link&&<a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-700 hover:underline">{proj.link}</a>}</div>))}</div></div>)}
       {certifications.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">🏆 Certifications</h2><ul className="space-y-1">{certifications.map((cert,i)=>(<li key={i} className="flex gap-2 text-xs text-gray-700"><span className="text-blue-800">•</span><span><span className="font-semibold">{cert.name}</span>{cert.issuer&&` — ${cert.issuer}`}{cert.year&&` (${cert.year})`}</span></li>))}</ul></div>)}
       {languages.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">🌐 Languages</h2><div className="grid grid-cols-3 gap-x-6 gap-y-3">{languages.map((lang,i)=>(<div key={i}><p className="text-xs font-medium text-gray-800 mb-1">{lang.name}</p><div className="flex gap-0.5">{[1,2,3,4,5].map(n=><div key={n} className={`h-2.5 w-5 ${lang.level>=n?'bg-blue-900':'bg-gray-200'}`}></div>)}</div></div>))}</div></div>)}
@@ -2107,7 +1686,7 @@ const BlueSidebarTemplate = () => (
       </div>
       <div style={{float:"left", width:"67%"}} className="p-6">
         {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-5">{summary}</p>}
-        {workExperiences.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-4"><div className="w-20 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-blue-500 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities&&<div className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{exp.responsibilities}</div>}{exp.achievements&&<div className="mt-1 pt-1 border-t border-blue-100"><p className="text-xs font-bold text-blue-600 uppercase mb-0.5">Key Achievements</p><div className="text-xs text-gray-700 whitespace-pre-line">{exp.achievements}</div></div>}</div></div>))}</div></div>)}
+        {workExperiences.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-4"><div className="w-20 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-blue-500 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pt-1 border-t border-blue-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div></div>))}</div></div>)}
         {certifications.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Certifications</h2><ul className="space-y-1">{certifications.map((cert,i)=>(<li key={i} className="flex gap-2 text-xs text-gray-700"><span className="text-blue-400">•</span><span><span className="font-semibold">{cert.name}</span>{cert.issuer&&` — ${cert.issuer}`}{cert.year&&` (${cert.year})`}</span></li>))}</ul></div>)}
         {educationList.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Education</h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i} className="flex gap-4"><div className="w-20 flex-shrink-0 text-xs text-gray-500">{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</div><div><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-blue-500 text-xs italic">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500">{edu.score}</p>}</div></div>))}</div></div>)}
         {projects.length>0&&(<div className="mb-5"><h2 className="text-base font-bold text-blue-500 mb-3 border-b-2 border-blue-200 pb-1 uppercase tracking-wide">Projects</h2><div className="space-y-2">{projects.map((proj,i)=>(<div key={i}><p className="font-bold text-gray-900 text-sm">{proj.name}</p>{proj.description&&<p className="text-xs text-gray-700">{proj.description}</p>}{proj.link&&<a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">{proj.link}</a>}</div>))}</div></div>)}
@@ -2324,7 +1903,7 @@ const BlueSidebarTemplate = () => (
                         💡 Click to add for <em>{currentWork.jobTitle}</em>:
                       </p>
                       <div className="space-y-2">
-                        {getSuggestions(currentWork.jobTitle).responsibilities.map((s, i) => (
+                        {getSuggestions(currentWork.jobTitle, roleContent).responsibilities.map((s, i) => (
                           <button key={i} onClick={() => applySuggestion(s, 'responsibilities')}
                             className="w-full text-left text-sm text-gray-700 hover:text-blue-700 hover:bg-blue-100 px-3 py-2 rounded-lg transition border border-transparent hover:border-blue-200">
                             • {s}
@@ -2361,7 +1940,7 @@ const BlueSidebarTemplate = () => (
                         🏆 Click to add for <em>{currentWork.jobTitle}</em>:
                       </p>
                       <div className="space-y-2">
-                        {getSuggestions(currentWork.jobTitle).achievements.map((s, i) => (
+                        {getSuggestions(currentWork.jobTitle, roleContent).achievements.map((s, i) => (
                           <button key={i} onClick={() => applySuggestion(s, 'achievements')}
                             className="w-full text-left text-sm text-gray-700 hover:text-purple-700 hover:bg-purple-100 px-3 py-2 rounded-lg transition border border-transparent hover:border-purple-200">
                             • {s}
@@ -2373,7 +1952,7 @@ const BlueSidebarTemplate = () => (
                 </div>
 
                 <button onClick={addWorkExperience} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-md">
-                  + Add Work Experience
+                  {editingWorkIdx !== null ? '✓ Update Work Experience' : '+ Add Work Experience'}
                 </button>
 
                 {workExperiences.length > 0 && (
@@ -2386,7 +1965,10 @@ const BlueSidebarTemplate = () => (
                           <p className="text-sm text-gray-600">{exp.company}</p>
                           <p className="text-xs text-gray-500">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>
                         </div>
-                        <button onClick={() => deleteWorkExperience(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition">Delete</button>
+                        <div className="flex gap-2">
+                          <button onClick={() => startEditWork(i)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm hover:bg-blue-50 px-3 py-1 rounded transition">Edit</button>
+                          <button onClick={() => deleteWorkExperience(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition">Delete</button>
+                        </div>
                       </div>
                     ))}
                   </div>
