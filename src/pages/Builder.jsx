@@ -516,6 +516,51 @@ const MONTHS = [
 ]
 const YEARS = Array.from({ length: 57 }, (_, i) => (new Date().getFullYear() - i).toString())
 
+// ─── DATA: CERTIFICATIONS ─────────────────────────────────────────────────────
+const CERTIFICATION_LIST = [
+  // Technology
+  "AWS Certified Solutions Architect","AWS Certified Developer","AWS Certified Cloud Practitioner",
+  "Google Cloud Professional Data Engineer","Google Cloud Associate Engineer","Azure Fundamentals (AZ-900)",
+  "Azure Administrator (AZ-104)","Azure Developer (AZ-204)","Azure Solutions Architect (AZ-305)",
+  "Certified Kubernetes Administrator (CKA)","Docker Certified Associate","HashiCorp Terraform Associate",
+  "Google Associate Cloud Engineer","Red Hat Certified Engineer (RHCE)","CompTIA Security+",
+  "CompTIA Network+","CompTIA A+","Certified Ethical Hacker (CEH)","CISSP","OSCP",
+  // Data & Analytics
+  "Google Data Analytics Certificate","IBM Data Science Professional","Microsoft Power BI Data Analyst",
+  "Tableau Desktop Specialist","Cloudera Data Platform","Databricks Certified Associate",
+  "Certified Analytics Professional (CAP)","SAS Certified Data Scientist",
+  // Project Management
+  "PMP - Project Management Professional","CAPM","Prince2 Foundation","Prince2 Practitioner",
+  "Certified Scrum Master (CSM)","Certified Scrum Product Owner (CSPO)","SAFe Agilist",
+  "ITIL Foundation","Six Sigma Green Belt","Six Sigma Black Belt","Lean Six Sigma",
+  // Finance & Accounting
+  "CFA Level 1","CFA Level 2","CFA Level 3","FRM Part 1","FRM Part 2","CFP - Certified Financial Planner",
+  "CA - Chartered Accountant","CMA - Cost & Management Accountant","CS - Company Secretary",
+  "ACCA","CPA - Certified Public Accountant","CAIA","Series 7","Series 63",
+  // Marketing & Sales
+  "Google Ads Certification","Google Analytics Certification","HubSpot Inbound Marketing",
+  "HubSpot Content Marketing","Facebook Blueprint","Hootsuite Social Marketing",
+  "Salesforce Administrator","Salesforce Sales Cloud Consultant","Marketo Certified Expert",
+  // HR
+  "SHRM-CP","SHRM-SCP","PHR - Professional in HR","SPHR","CHRP","Certified Payroll Professional",
+  // Quality & Manufacturing
+  "ISO 9001 Lead Auditor","ISO 27001 Lead Implementer","OHSAS 18001",
+  "CQPA - Certified Quality Process Analyst","Lean Manufacturing Certification",
+  // Design & Creative
+  "Adobe Certified Professional","Google UX Design Certificate","Interaction Design Foundation",
+  "AutoCAD Certified User","Revit Architecture Certified",
+  // Indian Specific
+  "NASSCOM Certified","NIELIT O Level","NIELIT A Level","NIELIT B Level","NIELIT C Level",
+  "NSDC Certified Skill Trainer","Pradhan Mantri Kaushal Kendra Certification",
+  "NISM Series I - Currency Derivatives","NISM Series V-A - Mutual Fund Distributors",
+  "NISM Series VIII - Equity Derivatives","IRDA Life Insurance Agent","IRDA General Insurance",
+  // Online Learning
+  "Coursera Google IT Support","Coursera Deep Learning Specialization","Coursera Machine Learning",
+  "edX MicroMasters","Udemy Complete Web Development","freeCodeCamp Full Stack",
+  "LinkedIn Learning Certificate","Microsoft Certified Educator",
+  "Other"
+]
+
 // ─── ROLE CONTENT ─────────────────────────────────────────────────────────────
 // 298 roles × 5 responsibilities + 5 achievements, lazy-loaded from /roleContent.json
 
