@@ -1216,6 +1216,74 @@ function Builder() {
     setShowCloudPanel(true)
   }
 
+  // ─── RESUME TUNE-UP ──────────────────────────────────────────────────────────
+  const loadRazorpay = () => new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true)
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+
+  const handleTuneUpPayment = async () => {
+    setTuneUpLoading(true)
+    setTuneUpMsg(null)
+    const loaded = await loadRazorpay()
+    if (!loaded) {
+      setTuneUpMsg({ type: 'error', text: 'Could not load payment gateway. Please check your connection and try again.' })
+      setTuneUpLoading(false)
+      return
+    }
+    const rzpKey = import.meta.env.VITE_RAZORPAY_KEY_ID
+    if (!rzpKey) {
+      setTuneUpMsg({ type: 'error', text: 'Payment not configured yet. Please contact support.' })
+      setTuneUpLoading(false)
+      return
+    }
+    const options = {
+      key: rzpKey,
+      amount: 49900, // ₹499 in paise
+      currency: 'INR',
+      name: 'AI Resume Builder',
+      description: 'Expert CV Review (24-hour turnaround)',
+      image: 'https://my-resume-builder-nine.vercel.app/favicon.svg',
+      prefill: {
+        name: name || '',
+        email: user?.primaryEmailAddress?.emailAddress || '',
+      },
+      theme: { color: '#6366f1' },
+      handler: async (response) => {
+        // Payment successful — store order in Supabase
+        try {
+          await supabase.from('tuneup_orders').insert({
+            user_id: user.id,
+            user_name: name || '',
+            user_email: user?.primaryEmailAddress?.emailAddress || '',
+            payment_id: response.razorpay_payment_id,
+            amount: 499,
+            resume_data: getResumeData(),
+            status: 'pending',
+          })
+        } catch (_) { /* non-blocking — order recorded via Razorpay dashboard regardless */ }
+        setTuneUpLoading(false)
+        setTuneUpMsg({
+          type: 'success',
+          text: `Payment confirmed! (${response.razorpay_payment_id}) Your CV has been sent for expert review. Expect detailed feedback within 24 hours at ${user?.primaryEmailAddress?.emailAddress || 'your email'}.`
+        })
+      },
+      modal: {
+        ondismiss: () => setTuneUpLoading(false)
+      }
+    }
+    const rzp = new window.Razorpay(options)
+    rzp.on('payment.failed', (resp) => {
+      setTuneUpLoading(false)
+      setTuneUpMsg({ type: 'error', text: `Payment failed: ${resp.error.description}` })
+    })
+    rzp.open()
+  }
+
   // ─── JOB MATCH SCORE ─────────────────────────────────────────────────────────
   const STOP_WORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with','by','from',
@@ -1281,6 +1349,10 @@ function Builder() {
   const [importLoading, setImportLoading] = useState(false)
   const [importMsg, setImportMsg] = useState(null)
   const [importPreview, setImportPreview] = useState(null) // parsed data before applying
+
+  const [showTuneUp, setShowTuneUp] = useState(false)
+  const [tuneUpLoading, setTuneUpLoading] = useState(false)
+  const [tuneUpMsg, setTuneUpMsg] = useState(null) // null | { type: 'success'|'error', text: string }
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -2314,6 +2386,7 @@ const BlueSidebarTemplate = () => (
               <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">🔍 ATS Check</button>
               <button onClick={handleJobMatch} className="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg font-semibold hover:bg-violet-100 transition text-sm border border-violet-200">🎯 Job Match</button>
               <button onClick={handleOpenCloudPanel} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-lg font-semibold hover:bg-sky-100 transition text-sm border border-sky-200">☁️ Cloud Saves</button>
+              <button onClick={() => { setShowTuneUp(true); setTuneUpMsg(null) }} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-lg font-semibold hover:bg-rose-100 transition text-sm border border-rose-200">✨ Tune-Up</button>
               <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">💾 Save</button>
               <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">🗑️ Clear All</button>
               <button onClick={() => { if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition text-sm">Log Out</button>
@@ -3498,6 +3571,81 @@ const BlueSidebarTemplate = () => (
               >
                 ✓ Done
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── RESUME TUNE-UP MODAL ─────────────────────────────────────── */}
+      {showTuneUp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-rose-500 to-pink-600 px-6 py-5 text-white relative">
+              <button onClick={() => setShowTuneUp(false)} className="absolute top-4 right-4 text-white/70 hover:text-white text-xl font-bold">✕</button>
+              <div className="text-3xl mb-2">✨</div>
+              <h2 className="text-xl font-bold">Expert CV Tune-Up</h2>
+              <p className="text-rose-100 text-sm mt-1">Get your resume reviewed by a hiring specialist</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              {tuneUpMsg ? (
+                <div className={`rounded-xl p-4 ${tuneUpMsg.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <p className={`text-sm font-semibold mb-1 ${tuneUpMsg.type === 'success' ? 'text-green-700' : 'text-red-700'}`}>
+                    {tuneUpMsg.type === 'success' ? '🎉 You\'re all set!' : '❌ Something went wrong'}
+                  </p>
+                  <p className={`text-sm ${tuneUpMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{tuneUpMsg.text}</p>
+                  {tuneUpMsg.type === 'success' && (
+                    <button onClick={() => setShowTuneUp(false)} className="mt-4 w-full py-2.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition text-sm">
+                      Close
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <ul className="space-y-3 mb-5">
+                    {[
+                      { icon: '🎯', title: 'Personalised feedback', desc: 'Line-by-line review tailored to your target role' },
+                      { icon: '📝', title: 'ATS optimisation tips', desc: 'Keywords and formatting advice to pass automated filters' },
+                      { icon: '💡', title: 'Impact improvements', desc: 'Suggestions to make your achievements stand out' },
+                      { icon: '⚡', title: '24-hour turnaround', desc: 'Feedback delivered directly to your email' },
+                    ].map(item => (
+                      <li key={item.title} className="flex items-start gap-3">
+                        <span className="text-xl flex-shrink-0">{item.icon}</span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+                          <p className="text-xs text-gray-500">{item.desc}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="bg-rose-50 rounded-xl p-4 mb-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-rose-500 font-medium uppercase tracking-wide">One-time fee</p>
+                      <p className="text-2xl font-bold text-rose-700">₹499</p>
+                    </div>
+                    <div className="text-right text-xs text-rose-500">
+                      <p>✓ Secure payment</p>
+                      <p>✓ No subscription</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleTuneUpPayment}
+                    disabled={tuneUpLoading}
+                    className={`w-full py-3.5 rounded-xl font-bold text-white transition text-sm flex items-center justify-center gap-2 ${tuneUpLoading ? 'bg-rose-300 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600'}`}
+                  >
+                    {tuneUpLoading ? (
+                      <><span className="animate-spin">⏳</span> Opening payment…</>
+                    ) : (
+                      <>💳 Pay ₹499 &amp; Get My CV Reviewed</>
+                    )}
+                  </button>
+                  <p className="text-xs text-center text-gray-400 mt-3">Secured by Razorpay · UPI, cards, net banking accepted</p>
+                </>
+              )}
             </div>
           </div>
         </div>
