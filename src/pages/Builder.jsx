@@ -1112,6 +1112,39 @@ function Builder() {
     setShowATS(true)
   }
 
+  // ─── RESUME STRENGTH SCORE ────────────────────────────────────────────────────
+  const computeStrengthScore = () => {
+    const criteria = [
+      { label: 'Full name',          pts: 10, pass: name.trim().length > 0 },
+      { label: 'Email address',      pts: 8,  pass: email.trim().length > 0 },
+      { label: 'Phone number',       pts: 5,  pass: phone.trim().length > 0 },
+      { label: 'Location',           pts: 3,  pass: location.trim().length > 0 },
+      { label: 'Profile photo',      pts: 4,  pass: !!photo },
+      { label: 'Professional summary (50+ chars)', pts: 8, pass: summary.trim().length >= 50 },
+      { label: 'Detailed summary (150+ chars)',    pts: 4, pass: summary.trim().length >= 150 },
+      { label: 'Work experience',    pts: 12, pass: workExperiences.length > 0 },
+      { label: 'Multiple roles (2+)',pts: 5,  pass: workExperiences.length >= 2 },
+      { label: 'Job responsibilities filled', pts: 5, pass: workExperiences.length > 0 && workExperiences.every(w => w.responsibilities?.trim().length > 10) },
+      { label: 'Achievements filled',pts: 5,  pass: workExperiences.length > 0 && workExperiences.some(w => w.achievements?.trim().length > 10) },
+      { label: 'Education',          pts: 10, pass: educationList.length > 0 },
+      { label: 'Skills (3+)',        pts: 6,  pass: skillsList.length >= 3 },
+      { label: 'Skills (6+)',        pts: 4,  pass: skillsList.length >= 6 },
+      { label: 'Projects',           pts: 4,  pass: projects.length > 0 },
+      { label: 'Certifications',     pts: 3,  pass: certifications.length > 0 },
+      { label: 'Website / LinkedIn', pts: 4,  pass: !!(websiteLinks.linkedin || websiteLinks.github || websiteLinks.portfolio) },
+    ]
+    const total = criteria.reduce((s, c) => s + c.pts, 0)         // 100
+    const earned = criteria.filter(c => c.pass).reduce((s, c) => s + c.pts, 0)
+    const pct = Math.round((earned / total) * 100)
+    const missing = criteria.filter(c => !c.pass).sort((a, b) => b.pts - a.pts)
+    const tip = missing.length > 0
+      ? `Add ${missing[0].label.toLowerCase()} to boost your score (+${missing[0].pts} pts)`
+      : 'Your resume is looking great! 🎉'
+    const color = pct >= 90 ? '#10b981' : pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444'
+    const label = pct >= 90 ? 'Excellent' : pct >= 70 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs work'
+    return { pct, tip, color, label, missing }
+  }
+
   // ─── CLOUD SAVE ───────────────────────────────────────────────────────────────
   const [showCloudPanel, setShowCloudPanel] = useState(false)
   const [cloudSaves, setCloudSaves] = useState([])
@@ -3068,6 +3101,49 @@ const BlueSidebarTemplate = () => (
 
           {/* RIGHT: PREVIEW */}
           <div className="lg:sticky lg:top-8 h-fit">
+
+            {/* ── STRENGTH SCORE WIDGET ── */}
+            {(() => {
+              const { pct, tip, color, label, missing } = computeStrengthScore()
+              const r = 34
+              const circ = 2 * Math.PI * r
+              const dash = circ * (pct / 100)
+              return (
+                <div className="mb-4 bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4">
+                  <div className="flex items-center gap-4">
+                    {/* SVG Ring */}
+                    <div className="flex-shrink-0">
+                      <svg width="80" height="80" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r={r} fill="none" stroke="#f3f4f6" strokeWidth="7" />
+                        <circle
+                          cx="40" cy="40" r={r} fill="none"
+                          stroke={color} strokeWidth="7"
+                          strokeLinecap="round"
+                          strokeDasharray={`${dash} ${circ}`}
+                          transform="rotate(-90 40 40)"
+                          style={{transition:'stroke-dasharray 0.5s ease'}}
+                        />
+                        <text x="40" y="37" textAnchor="middle" dominantBaseline="middle" fontSize="16" fontWeight="bold" fill={color}>{pct}%</text>
+                        <text x="40" y="53" textAnchor="middle" dominantBaseline="middle" fontSize="8" fill="#9ca3af">{label}</text>
+                      </svg>
+                    </div>
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 mb-1">Resume Strength</p>
+                      <p className="text-xs text-gray-500 leading-snug">{tip}</p>
+                      {missing.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {missing.slice(0, 3).map(m => (
+                            <span key={m.label} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">+{m.pts} {m.label}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {selectedTemplate === 'modern' && <ModernTemplate />}
             {selectedTemplate === 'classic' && <ClassicTemplate />}
             {selectedTemplate === 'minimal' && <MinimalTemplate />}
