@@ -1006,6 +1006,111 @@ function Builder() {
     localStorage.removeItem('resumeData')
   }
 
+  // ─── ATS CHECKER ─────────────────────────────────────────────────────────────
+  const runATSCheck = () => {
+    const checks = [
+      // Critical (weight 3)
+      {
+        id: 'name', weight: 3, category: 'critical',
+        label: 'Full name is present',
+        pass: name.trim().length > 0,
+        tip: 'Add your full name in the Personal Information section.'
+      },
+      {
+        id: 'email', weight: 3, category: 'critical',
+        label: 'Email address included',
+        pass: email.trim().length > 0,
+        tip: 'Add your email so recruiters and ATS systems can reach you.'
+      },
+      {
+        id: 'phone', weight: 3, category: 'critical',
+        label: 'Phone number included',
+        pass: phone.trim().length > 0,
+        tip: 'Add your phone number for direct contact.'
+      },
+      {
+        id: 'summary', weight: 3, category: 'critical',
+        label: 'Professional summary written',
+        pass: summary.trim().length >= 50,
+        tip: 'Write a 2–3 sentence summary. ATS systems heavily weight this section for keyword matching.'
+      },
+      {
+        id: 'work', weight: 3, category: 'critical',
+        label: 'At least one work experience added',
+        pass: workExperiences.length > 0,
+        tip: 'Add your most recent job to the Work Experience section.'
+      },
+      {
+        id: 'education', weight: 3, category: 'critical',
+        label: 'Education section filled',
+        pass: educationList.length > 0,
+        tip: 'Add your highest qualification — most ATS systems filter by education level.'
+      },
+      {
+        id: 'skills', weight: 3, category: 'critical',
+        label: 'At least 5 skills listed',
+        pass: skillsList.length >= 5,
+        tip: `You have ${skillsList.length} skill(s). ATS systems match keywords from your Skills section to the job description — aim for 8–12.`
+      },
+      // Improvements (weight 2)
+      {
+        id: 'responsibilities', weight: 2, category: 'improvement',
+        label: 'All roles have responsibilities filled',
+        pass: workExperiences.length > 0 && workExperiences.every(w => w.responsibilities && w.responsibilities.trim().length > 10),
+        tip: 'Add key responsibilities for every job role — ATS systems scan these for role-match keywords.'
+      },
+      {
+        id: 'achievements', weight: 2, category: 'improvement',
+        label: 'Achievements added to work experience',
+        pass: workExperiences.length > 0 && workExperiences.some(w => w.achievements && w.achievements.trim().length > 10),
+        tip: 'Add accomplishments to at least one role. Recruiters prioritise results-driven candidates.'
+      },
+      {
+        id: 'quantified', weight: 2, category: 'improvement',
+        label: 'Achievements include numbers or metrics',
+        pass: workExperiences.some(w => w.achievements && /\d/.test(w.achievements)),
+        tip: 'Use numbers to quantify impact — e.g. "Increased revenue by 30%" or "Managed a team of 8".'
+      },
+      {
+        id: 'summaryLength', weight: 2, category: 'improvement',
+        label: 'Summary is detailed (100+ characters)',
+        pass: summary.trim().length >= 100,
+        tip: 'Expand your summary to at least 2–3 full sentences. More detail = more keyword coverage.'
+      },
+      {
+        id: 'multipleJobs', weight: 2, category: 'improvement',
+        label: 'Multiple work experiences listed',
+        pass: workExperiences.length >= 2,
+        tip: 'Listing 2+ roles shows career progression — ATS systems and recruiters both value this.'
+      },
+      // Bonus (weight 1)
+      {
+        id: 'location', weight: 1, category: 'bonus',
+        label: 'Location included',
+        pass: location.trim().length > 0,
+        tip: 'Many job postings filter by location — add your city at minimum.'
+      },
+      {
+        id: 'certifications', weight: 1, category: 'bonus',
+        label: 'Certifications added',
+        pass: certifications.length > 0,
+        tip: 'Certifications can match role-specific ATS keywords and signal credibility.'
+      },
+    ]
+    const maxScore = checks.reduce((s, c) => s + c.weight, 0)
+    const earned = checks.filter(c => c.pass).reduce((s, c) => s + c.weight, 0)
+    const score = Math.round((earned / maxScore) * 100)
+    return { checks, score }
+  }
+
+  const [showATS, setShowATS] = useState(false)
+  const [atsData, setAtsData] = useState(null)
+
+  const handleATSCheck = () => {
+    setAtsData(runATSCheck())
+    setShowATS(true)
+  }
+
   const formatDate = (month, year, isPresent) => {
     if (isPresent) return 'Present'
     if (month && year) return `${month.slice(0, 3)} ${year}`
@@ -1847,6 +1952,7 @@ const BlueSidebarTemplate = () => (
             <div className="flex items-center gap-3">
               <span className="text-gray-700">Hi, {displayName}!</span>
               <button onClick={() => setShowTemplateSwitcher(true)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition text-sm border border-indigo-200">🎨 Switch Template</button>
+              <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">🔍 ATS Check</button>
               <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">💾 Save</button>
               <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">🗑️ Clear All</button>
               <button onClick={() => { if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition text-sm">Log Out</button>
@@ -2549,6 +2655,101 @@ const BlueSidebarTemplate = () => (
         </div>
       </div>
       {/* ── Overlap Warning Modal ── */}
+      {/* ── ATS CHECKER MODAL ───────────────────────────────────────────── */}
+      {showATS && atsData && (() => {
+        const { checks, score } = atsData
+        const critical = checks.filter(c => c.category === 'critical')
+        const improvements = checks.filter(c => c.category === 'improvement')
+        const bonus = checks.filter(c => c.category === 'bonus')
+        const failed = checks.filter(c => !c.pass)
+        const passed = checks.filter(c => c.pass)
+        const scoreColor = score >= 80 ? '#16a34a' : score >= 55 ? '#d97706' : '#dc2626'
+        const scoreBg = score >= 80 ? '#f0fdf4' : score >= 55 ? '#fffbeb' : '#fef2f2'
+        const scoreLabel = score >= 80 ? 'Great shape!' : score >= 55 ? 'Needs work' : 'Needs attention'
+        const circumference = 2 * Math.PI * 40
+        const strokeDash = circumference - (score / 100) * circumference
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={() => setShowATS(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">🔍 ATS Compatibility Check</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">How well will your CV pass automated screening?</p>
+                </div>
+                <button onClick={() => setShowATS(false)} className="text-gray-400 hover:text-gray-700 text-2xl font-light leading-none">×</button>
+              </div>
+
+              {/* Score ring */}
+              <div className="flex flex-col items-center py-5" style={{ backgroundColor: scoreBg }}>
+                <svg width="100" height="100" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                  <circle
+                    cx="50" cy="50" r="40" fill="none"
+                    stroke={scoreColor} strokeWidth="10"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDash}
+                    strokeLinecap="round"
+                    transform="rotate(-90 50 50)"
+                  />
+                  <text x="50" y="45" textAnchor="middle" fontSize="20" fontWeight="bold" fill={scoreColor}>{score}</text>
+                  <text x="50" y="60" textAnchor="middle" fontSize="10" fill="#6b7280">/ 100</text>
+                </svg>
+                <p className="text-sm font-semibold mt-1" style={{ color: scoreColor }}>{scoreLabel}</p>
+                <p className="text-xs text-gray-500">{passed.length} of {checks.length} checks passed</p>
+              </div>
+
+              {/* Checks list */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+
+                {failed.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-red-600 mb-2">❌ Issues to Fix ({failed.length})</h3>
+                    <div className="space-y-2">
+                      {failed.map(c => (
+                        <div key={c.id} className="flex gap-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                          <span className="text-red-500 mt-0.5 flex-shrink-0">✗</span>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{c.label}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{c.tip}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {passed.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-emerald-600 mb-2">✅ Passing ({passed.length})</h3>
+                    <div className="space-y-1.5">
+                      {passed.map(c => (
+                        <div key={c.id} className="flex gap-3 p-2.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                          <span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>
+                          <p className="text-sm text-gray-700">{c.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-100">
+                <button
+                  onClick={() => { setAtsData(runATSCheck()); }}
+                  className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition text-sm mb-2"
+                >
+                  🔄 Re-run Check
+                </button>
+                <button onClick={() => setShowATS(false)} className="w-full py-2 text-gray-500 hover:text-gray-800 text-sm font-medium">Close</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── TEMPLATE SWITCHER PANEL ─────────────────────────────────────── */}
       {showTemplateSwitcher && (
         <div
