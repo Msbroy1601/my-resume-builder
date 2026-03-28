@@ -624,6 +624,27 @@ const BulletList = ({ text, className = '' }) => {
   )
 }
 
+// ─── DATA: TEMPLATES (for in-builder switcher) ───────────────────────────────
+const TEMPLATE_LIST = [
+  { id: 'modern',       name: 'Modern',        badge: 'Popular' },
+  { id: 'classic',      name: 'Classic',        badge: '' },
+  { id: 'minimal',      name: 'Minimal',        badge: '' },
+  { id: 'creative',     name: 'Creative',       badge: '' },
+  { id: 'professional', name: 'Professional',   badge: 'ATS Friendly' },
+  { id: 'sidebar',      name: 'Sidebar',        badge: '📷 Photo' },
+  { id: 'elegant',      name: 'Elegant',        badge: '' },
+  { id: 'tech',         name: 'Tech',           badge: 'For Devs' },
+  { id: 'greensidebar', name: 'Green Sidebar',  badge: '📷 Photo' },
+  { id: 'goldheader',   name: 'Gold Header',    badge: '📷 Photo' },
+  { id: 'classicserif', name: 'Classic Serif',  badge: '📷 Photo' },
+  { id: 'coral',        name: 'Coral',          badge: '📷 Photo' },
+  { id: 'amber',        name: 'Amber',          badge: '📷 Photo' },
+  { id: 'serif2',       name: 'Formal Serif',   badge: '📷 Photo' },
+  { id: 'hexagon',      name: 'Hexagon',        badge: '' },
+  { id: 'navy',         name: 'Navy Icons',     badge: '📷 Photo' },
+  { id: 'bluesidebar',  name: 'Blue Sidebar',   badge: '📷 Photo' },
+]
+
 // ─── COMPONENT: Searchable Dropdown ──────────────────────────────────────────
 function SearchableDropdown({ options, value, onChange, placeholder, label }) {
   const [search, setSearch] = useState('')
@@ -887,6 +908,7 @@ function Builder() {
   const [workExperiences, setWorkExperiences] = useState([])
   const [editingWorkIdx, setEditingWorkIdx] = useState(null)
   const [overlapWarning, setOverlapWarning] = useState(null) // { overlapping: exp, pending: work }
+  const [showTemplateSwitcher, setShowTemplateSwitcher] = useState(false)
   const [roleContent, setRoleContent] = useState(null)
   const [currentWork, setCurrentWork] = useState({
     company: '', jobTitle: '', startMonth: '', startYear: '',
@@ -1824,7 +1846,7 @@ const BlueSidebarTemplate = () => (
             </div>
             <div className="flex items-center gap-3">
               <span className="text-gray-700">Hi, {displayName}!</span>
-              <button onClick={() => navigate('/templates')} className="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold">← Change Template</button>
+              <button onClick={() => setShowTemplateSwitcher(true)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition text-sm border border-indigo-200">🎨 Switch Template</button>
               <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">💾 Save</button>
               <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">🗑️ Clear All</button>
               <button onClick={() => { if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition text-sm">Log Out</button>
@@ -2527,6 +2549,85 @@ const BlueSidebarTemplate = () => (
         </div>
       </div>
       {/* ── Overlap Warning Modal ── */}
+      {/* ── TEMPLATE SWITCHER PANEL ─────────────────────────────────────── */}
+      {showTemplateSwitcher && (
+        <div
+          className="fixed inset-0 z-50 flex"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setShowTemplateSwitcher(false)}
+        >
+          {/* Slide-in panel from right */}
+          <div
+            className="ml-auto h-full bg-white shadow-2xl flex flex-col"
+            style={{ width: '420px', maxWidth: '95vw' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">🎨 Choose a Template</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Your CV data is preserved — just pick a new look</p>
+              </div>
+              <button
+                onClick={() => setShowTemplateSwitcher(false)}
+                className="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light"
+              >×</button>
+            </div>
+
+            {/* Scrollable grid */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {TEMPLATE_LIST.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => { setSelectedTemplate(t.id); setShowTemplateSwitcher(false) }}
+                    className={`relative rounded-xl overflow-hidden border-2 transition-all group text-left
+                      ${selectedTemplate === t.id
+                        ? 'border-indigo-500 ring-2 ring-indigo-300'
+                        : 'border-gray-200 hover:border-indigo-300'}`}
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-full aspect-[3/4] bg-gray-100 overflow-hidden">
+                      <img
+                        src={`/template-previews/${t.id}.jpg`}
+                        alt={t.name}
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                        onError={e => { e.target.style.display = 'none' }}
+                      />
+                    </div>
+
+                    {/* Name + badge */}
+                    <div className="px-2 py-2 bg-white">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-xs font-semibold text-gray-800">{t.name}</span>
+                        {t.badge && (
+                          <span className="text-[10px] bg-indigo-50 text-indigo-600 rounded-full px-1.5 py-0.5 font-medium">{t.badge}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Active tick */}
+                    {selectedTemplate === t.id && (
+                      <div className="absolute top-2 right-2 bg-indigo-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow">✓</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={() => setShowTemplateSwitcher(false)}
+                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition text-sm"
+              >
+                ✓ Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {overlapWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}>
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full">
