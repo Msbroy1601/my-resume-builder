@@ -1276,6 +1276,198 @@ function Builder() {
     setJobMatchResult(null)
   }
 
+  // ─── CV IMPORT ───────────────────────────────────────────────────────────────
+  const [showImport, setShowImport] = useState(false)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importMsg, setImportMsg] = useState(null)
+  const [importPreview, setImportPreview] = useState(null) // parsed data before applying
+
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+  const parseMonthYear = (str) => {
+    if (!str) return { month: '', year: '' }
+    const s = str.trim()
+    // Try "Month Year" or "Month, Year" or "MM/YYYY"
+    const monthMatch = MONTHS.find(m => s.toLowerCase().includes(m.toLowerCase()))
+    const yearMatch = s.match(/\b(19|20)\d{2}\b/)
+    return { month: monthMatch || '', year: yearMatch ? yearMatch[0] : '' }
+  }
+
+  const extractFromText = (text) => {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    const result = {
+      name: '', email: '', phone: '', location: '', summary: '',
+      workExperiences: [], educationList: [], skillsList: [],
+    }
+
+    // Email
+    const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}/)
+    if (emailMatch) result.email = emailMatch[0]
+
+    // Phone
+    const phoneMatch = text.match(/(\+?\d[\d\s\-().]{7,}\d)/)
+    if (phoneMatch) result.phone = phoneMatch[0].trim()
+
+    // Name — usually first non-empty line that isn't an email/phone/URL
+    for (const line of lines.slice(0, 5)) {
+      if (!line.match(/@|http|linkedin|github|\+?\d[\d\s]{6,}/) && line.length > 2 && line.length < 60) {
+        result.name = line; break
+      }
+    }
+
+    // Location — look for city/country patterns near the top
+    const locMatch = text.match(/\b([A-Z][a-z]+([\s,]+[A-Z][a-z]+){0,3})\s*[,|]\s*(India|UK|US|USA|United Kingdom|United States|Australia|Canada|Singapore|UAE|Remote)\b/)
+    if (locMatch) result.location = locMatch[0].trim()
+
+    // Summary — look for "Summary", "Profile", "About" section
+    const summaryIdx = lines.findIndex(l => /^(summary|profile|about|objective|professional summary)/i.test(l))
+    if (summaryIdx !== -1) {
+      const summaryLines = []
+      for (let i = summaryIdx + 1; i < Math.min(summaryIdx + 6, lines.length); i++) {
+        if (/^(experience|education|skills|work|employment)/i.test(lines[i])) break
+        summaryLines.push(lines[i])
+      }
+      result.summary = summaryLines.join(' ').trim()
+    }
+
+    // Skills — look for "Skills" section, collect comma/bullet separated items
+    const skillsIdx = lines.findIndex(l => /^(skills|technical skills|core skills|key skills)/i.test(l))
+    if (skillsIdx !== -1) {
+      const skillLines = []
+      for (let i = skillsIdx + 1; i < Math.min(skillsIdx + 15, lines.length); i++) {
+        if (/^(experience|education|work|employment|projects|certifications)/i.test(lines[i])) break
+        skillLines.push(lines[i])
+      }
+      const skillText = skillLines.join(' ')
+      const skills = skillText.split(/[,•|·\n]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 40)
+      result.skillsList = skills.slice(0, 20).map(name => ({ name, level: 3 }))
+    }
+
+    // Work Experience — find section, parse job blocks
+    const expIdx = lines.findIndex(l => /^(experience|work experience|employment|professional experience)/i.test(l))
+    const eduIdx = lines.findIndex(l => /^(education|academic|qualifications)/i.test(l))
+    if (expIdx !== -1) {
+      const expEnd = eduIdx > expIdx ? eduIdx : lines.length
+      const expLines = lines.slice(expIdx + 1, expEnd)
+      let currentJob = null
+      const respLines = []
+      for (const line of expLines) {
+        // Date range pattern: "Jan 2020 – Dec 2022" or "2020 - 2022"
+        const dateRange = line.match(/((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s,]*\d{4}|\d{4})\s*[-–—to]+\s*((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s,]*\d{4}|\d{4}|Present|Current)/i)
+        if (dateRange) {
+          if (currentJob) {
+            currentJob.responsibilities = respLines.join('\n')
+            result.workExperiences.push(currentJob)
+            respLines.length = 0
+          }
+          const [startStr, , endStr] = dateRange[0].split(/\s*[-–—to]+\s*/i)
+          const start = parseMonthYear(startStr)
+          const isPresent = /present|current/i.test(endStr)
+          const end = isPresent ? { month: '', year: '' } : parseMonthYear(endStr)
+          currentJob = {
+            company: '', jobTitle: '',
+            startMonth: start.month, startYear: start.year,
+            endMonth: end.month, endYear: end.year,
+            isPresent, responsibilities: '', achievements: ''
+          }
+        } else if (currentJob && !currentJob.jobTitle && line.length > 2 && line.length < 80) {
+          currentJob.jobTitle = line
+        } else if (currentJob && !currentJob.company && line.length > 2 && line.length < 80) {
+          currentJob.company = line
+        } else if (currentJob && line.startsWith('•') || line.startsWith('-') || line.startsWith('·')) {
+          respLines.push(line.replace(/^[•\-·]\s*/, ''))
+        } else if (currentJob && line.length > 20) {
+          respLines.push(line)
+        }
+      }
+      if (currentJob) {
+        currentJob.responsibilities = respLines.join('\n')
+        result.workExperiences.push(currentJob)
+      }
+    }
+
+    // Education
+    if (eduIdx !== -1) {
+      const eduLines = lines.slice(eduIdx + 1, Math.min(eduIdx + 20, lines.length))
+      let currentEdu = null
+      for (const line of eduLines) {
+        if (/^(skills|experience|projects|certifications|languages)/i.test(line)) break
+        const dateRange = line.match(/(19|20)\d{2}\s*[-–—to]*\s*((19|20)\d{2}|Present)?/i)
+        if (dateRange) {
+          if (currentEdu) result.educationList.push(currentEdu)
+          const years = line.match(/\b(19|20)\d{2}\b/g) || []
+          currentEdu = {
+            school: '', degree: '',
+            startMonth: '', startYear: years[0] || '',
+            endMonth: '', endYear: years[1] || '',
+            isPresent: /present/i.test(line), score: ''
+          }
+        } else if (currentEdu && !currentEdu.degree && line.length > 2 && line.length < 100) {
+          currentEdu.degree = line
+        } else if (currentEdu && !currentEdu.school && line.length > 2 && line.length < 100) {
+          currentEdu.school = line
+        }
+      }
+      if (currentEdu) result.educationList.push(currentEdu)
+    }
+
+    return result
+  }
+
+  const handleImportFile = async (file) => {
+    if (!file) return
+    setImportLoading(true)
+    setImportMsg(null)
+    setImportPreview(null)
+    try {
+      let text = ''
+      if (file.name.endsWith('.pdf')) {
+        const pdfjsLib = await import('pdfjs-dist')
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+        const arrayBuffer = await file.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const content = await page.getTextContent()
+          text += content.items.map(item => item.str).join(' ') + '\n'
+        }
+      } else if (file.name.endsWith('.docx')) {
+        const mammoth = await import('mammoth')
+        const arrayBuffer = await file.arrayBuffer()
+        const result = await mammoth.extractRawText({ arrayBuffer })
+        text = result.value
+      } else if (file.name.endsWith('.txt')) {
+        text = await file.text()
+      } else {
+        setImportMsg({ type: 'error', text: 'Please upload a PDF, DOCX, or TXT file.' })
+        setImportLoading(false)
+        return
+      }
+      const parsed = extractFromText(text)
+      setImportPreview(parsed)
+      setImportMsg({ type: 'success', text: `Parsed successfully! Review and click "Apply to CV" to fill in your form.` })
+    } catch (err) {
+      console.error(err)
+      setImportMsg({ type: 'error', text: 'Could not parse this file. Try a different format or paste your CV text manually.' })
+    }
+    setImportLoading(false)
+  }
+
+  const applyImport = () => {
+    if (!importPreview) return
+    if (importPreview.name) setName(importPreview.name)
+    if (importPreview.email) setEmail(importPreview.email)
+    if (importPreview.phone) setPhone(importPreview.phone)
+    if (importPreview.location) setLocation(importPreview.location)
+    if (importPreview.summary) setSummary(importPreview.summary)
+    if (importPreview.workExperiences?.length) setWorkExperiences(importPreview.workExperiences)
+    if (importPreview.educationList?.length) setEducationList(importPreview.educationList)
+    if (importPreview.skillsList?.length) setSkillsList(importPreview.skillsList)
+    setShowImport(false)
+    setImportPreview(null)
+    setImportMsg(null)
+  }
+
   const formatDate = (month, year, isPresent) => {
     if (isPresent) return 'Present'
     if (month && year) return `${month.slice(0, 3)} ${year}`
@@ -2116,6 +2308,7 @@ const BlueSidebarTemplate = () => (
             </div>
             <div className="flex items-center gap-3">
               <span className="text-gray-700">Hi, {displayName}!</span>
+              <button onClick={() => { setShowImport(true); setImportMsg(null); setImportPreview(null) }} className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg font-semibold hover:bg-orange-100 transition text-sm border border-orange-200">📥 Import CV</button>
               <button onClick={() => setShowTemplateSwitcher(true)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition text-sm border border-indigo-200">🎨 Switch Template</button>
               <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">🔍 ATS Check</button>
               <button onClick={handleJobMatch} className="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg font-semibold hover:bg-violet-100 transition text-sm border border-violet-200">🎯 Job Match</button>
@@ -3011,6 +3204,123 @@ const BlueSidebarTemplate = () => (
 
             <div className="px-6 py-4 border-t border-gray-100">
               <button onClick={() => setShowJobMatch(false)} className="w-full py-2 text-gray-500 hover:text-gray-800 text-sm font-medium">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CV IMPORT MODAL ─────────────────────────────────────────────── */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={() => setShowImport(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">📥 Import Existing CV</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Upload your CV and we'll pre-fill the form automatically</p>
+              </div>
+              <button onClick={() => setShowImport(false)} className="text-gray-400 hover:text-gray-700 text-2xl font-light leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              {/* Upload area */}
+              <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-orange-200 rounded-2xl p-8 cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition">
+                <span className="text-4xl">{importLoading ? '⏳' : '📄'}</span>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-gray-700">{importLoading ? 'Reading your CV…' : 'Click to upload your CV'}</p>
+                  <p className="text-xs text-gray-400 mt-1">PDF, DOCX, or TXT — max 10MB</p>
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  className="hidden"
+                  disabled={importLoading}
+                  onChange={e => handleImportFile(e.target.files?.[0])}
+                />
+              </label>
+
+              {importMsg && (
+                <div className={`rounded-xl px-4 py-3 text-sm font-medium ${importMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                  {importMsg.text}
+                </div>
+              )}
+
+              {/* Preview parsed data */}
+              {importPreview && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-gray-700">📋 Detected fields — review before applying:</h3>
+
+                  {[
+                    { label: 'Name', value: importPreview.name },
+                    { label: 'Email', value: importPreview.email },
+                    { label: 'Phone', value: importPreview.phone },
+                    { label: 'Location', value: importPreview.location },
+                  ].filter(f => f.value).map(f => (
+                    <div key={f.label} className="flex gap-2 text-sm">
+                      <span className="font-semibold text-gray-500 w-20 flex-shrink-0">{f.label}:</span>
+                      <span className="text-gray-800 truncate">{f.value}</span>
+                    </div>
+                  ))}
+
+                  {importPreview.summary && (
+                    <div className="text-sm">
+                      <span className="font-semibold text-gray-500">Summary:</span>
+                      <p className="text-gray-700 mt-0.5 text-xs line-clamp-3">{importPreview.summary}</p>
+                    </div>
+                  )}
+
+                  {importPreview.workExperiences?.length > 0 && (
+                    <div className="text-sm">
+                      <span className="font-semibold text-gray-500">Work Experience ({importPreview.workExperiences.length} roles detected):</span>
+                      <div className="mt-1 space-y-1">
+                        {importPreview.workExperiences.map((w, i) => (
+                          <div key={i} className="text-xs bg-gray-50 rounded-lg px-3 py-2">
+                            <span className="font-semibold">{w.jobTitle || 'Role'}</span>
+                            {w.company && <span className="text-gray-500"> @ {w.company}</span>}
+                            {w.startYear && <span className="text-gray-400"> · {w.startYear}–{w.isPresent ? 'Present' : w.endYear}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {importPreview.educationList?.length > 0 && (
+                    <div className="text-sm">
+                      <span className="font-semibold text-gray-500">Education ({importPreview.educationList.length} detected):</span>
+                      <div className="mt-1 space-y-1">
+                        {importPreview.educationList.map((e, i) => (
+                          <div key={i} className="text-xs bg-gray-50 rounded-lg px-3 py-2">
+                            <span className="font-semibold">{e.degree || 'Degree'}</span>
+                            {e.school && <span className="text-gray-500"> @ {e.school}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {importPreview.skillsList?.length > 0 && (
+                    <div className="text-sm">
+                      <span className="font-semibold text-gray-500">Skills ({importPreview.skillsList.length} detected):</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {importPreview.skillsList.map((s, i) => (
+                          <span key={i} className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full text-xs border border-orange-100">{s.name}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-400 italic">⚠️ This overwrites your current form data. You can edit anything after applying.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 space-y-2">
+              {importPreview && (
+                <button onClick={applyImport} className="w-full py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition text-sm">
+                  ✓ Apply to CV
+                </button>
+              )}
+              <button onClick={() => setShowImport(false)} className="w-full py-2 text-gray-500 hover:text-gray-800 text-sm font-medium">Close</button>
             </div>
           </div>
         </div>
