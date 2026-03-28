@@ -1111,6 +1111,66 @@ function Builder() {
     setShowATS(true)
   }
 
+  // ─── JOB MATCH SCORE ─────────────────────────────────────────────────────────
+  const STOP_WORDS = new Set([
+    'a','an','the','and','or','but','in','on','at','to','for','of','with','by','from',
+    'as','is','was','are','were','be','been','being','have','has','had','do','does','did',
+    'will','would','could','should','may','might','shall','must','can','need','that','this',
+    'these','those','it','its','we','you','he','she','they','them','their','our','your',
+    'i','my','me','us','who','what','which','when','where','why','how','all','each','both',
+    'than','then','so','if','not','no','nor','yet','either','neither','while','although',
+    'because','since','unless','until','after','before','during','through','about','above',
+    'below','between','into','over','under','up','down','out','off','such','more','most',
+    'other','per','any','own','same','too','very','just','also','only','well','new','strong',
+    'based','role','position','looking','candidate','applicants','experience','work','working',
+    'including','support','ensure','provide','help','assist','responsible','ability','skills',
+    'using','use','make','team','good','great','excellent','preferred','required','must',
+  ])
+
+  const extractKeywords = (text) => {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s\-+#.]/g, ' ')
+      .split(/\s+/)
+      .map(w => w.replace(/^[-.]|[-.]$/g, '').trim())
+      .filter(w => w.length >= 3 && !STOP_WORDS.has(w) && !/^\d+$/.test(w))
+  }
+
+  const getResumeText = () => [
+    name, summary,
+    ...workExperiences.map(w => `${w.jobTitle} ${w.company} ${w.responsibilities} ${w.achievements}`),
+    ...educationList.map(e => `${e.degree} ${e.school}`),
+    ...skillsList.map(s => s.name),
+    ...certifications.map(c => c.name),
+    ...projects.map(p => `${p.name} ${p.description}`),
+    hobbies,
+  ].join(' ')
+
+  const runJobMatch = (jd) => {
+    if (!jd.trim()) return null
+    const jdKeywords = extractKeywords(jd)
+    const jdUnique = [...new Set(jdKeywords)]
+    // Count frequency in JD to find the most important keywords
+    const freq = {}
+    jdKeywords.forEach(w => { freq[w] = (freq[w] || 0) + 1 })
+    // Sort by frequency, take top 40
+    const topKeywords = jdUnique.sort((a, b) => freq[b] - freq[a]).slice(0, 40)
+    const resumeText = getResumeText().toLowerCase()
+    const matched = topKeywords.filter(kw => resumeText.includes(kw))
+    const missing = topKeywords.filter(kw => !resumeText.includes(kw)).slice(0, 15)
+    const score = Math.round((matched.length / topKeywords.length) * 100)
+    return { score, matched, missing, total: topKeywords.length }
+  }
+
+  const [showJobMatch, setShowJobMatch] = useState(false)
+  const [jobMatchJD, setJobMatchJD] = useState('')
+  const [jobMatchResult, setJobMatchResult] = useState(null)
+
+  const handleJobMatch = () => {
+    setShowJobMatch(true)
+    setJobMatchResult(null)
+  }
+
   const formatDate = (month, year, isPresent) => {
     if (isPresent) return 'Present'
     if (month && year) return `${month.slice(0, 3)} ${year}`
@@ -1953,6 +2013,7 @@ const BlueSidebarTemplate = () => (
               <span className="text-gray-700">Hi, {displayName}!</span>
               <button onClick={() => setShowTemplateSwitcher(true)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition text-sm border border-indigo-200">🎨 Switch Template</button>
               <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">🔍 ATS Check</button>
+              <button onClick={handleJobMatch} className="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg font-semibold hover:bg-violet-100 transition text-sm border border-violet-200">🎯 Job Match</button>
               <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">💾 Save</button>
               <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">🗑️ Clear All</button>
               <button onClick={() => { if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition text-sm">Log Out</button>
@@ -2749,6 +2810,105 @@ const BlueSidebarTemplate = () => (
           </div>
         )
       })()}
+
+      {/* ── JOB MATCH MODAL ─────────────────────────────────────────────── */}
+      {showJobMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={() => setShowJobMatch(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">🎯 Job Match Score</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Paste a job description to see how well your CV matches</p>
+              </div>
+              <button onClick={() => setShowJobMatch(false)} className="text-gray-400 hover:text-gray-700 text-2xl font-light leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              {/* JD input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Paste the Job Description</label>
+                <textarea
+                  value={jobMatchJD}
+                  onChange={e => { setJobMatchJD(e.target.value); setJobMatchResult(null) }}
+                  placeholder="Copy and paste the full job description here — the more text, the more accurate the match..."
+                  rows={7}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
+                />
+                <button
+                  onClick={() => setJobMatchResult(runJobMatch(jobMatchJD))}
+                  disabled={!jobMatchJD.trim()}
+                  className="mt-2 w-full py-2.5 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Analyse Match →
+                </button>
+              </div>
+
+              {/* Results */}
+              {jobMatchResult && (() => {
+                const { score, matched, missing, total } = jobMatchResult
+                const scoreColor = score >= 70 ? '#7c3aed' : score >= 45 ? '#d97706' : '#dc2626'
+                const scoreBg = score >= 70 ? '#f5f3ff' : score >= 45 ? '#fffbeb' : '#fef2f2'
+                const scoreLabel = score >= 70 ? 'Strong match!' : score >= 45 ? 'Partial match' : 'Low match'
+                const circumference = 2 * Math.PI * 38
+                const strokeDash = circumference - (score / 100) * circumference
+                return (
+                  <div className="space-y-4">
+                    {/* Score ring */}
+                    <div className="flex flex-col items-center py-4 rounded-2xl" style={{ backgroundColor: scoreBg }}>
+                      <svg width="96" height="96" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                        <circle
+                          cx="50" cy="50" r="38" fill="none"
+                          stroke={scoreColor} strokeWidth="10"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={strokeDash}
+                          strokeLinecap="round"
+                          transform="rotate(-90 50 50)"
+                        />
+                        <text x="50" y="46" textAnchor="middle" fontSize="20" fontWeight="bold" fill={scoreColor}>{score}%</text>
+                        <text x="50" y="61" textAnchor="middle" fontSize="9" fill="#6b7280">match</text>
+                      </svg>
+                      <p className="text-sm font-bold mt-1" style={{ color: scoreColor }}>{scoreLabel}</p>
+                      <p className="text-xs text-gray-500">{matched.length} of {total} keywords found in your CV</p>
+                    </div>
+
+                    {/* Missing keywords */}
+                    {missing.length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-orange-600 mb-2">⚡ Keywords to add ({missing.length})</h3>
+                        <p className="text-xs text-gray-500 mb-2">These words appear in the JD but not in your CV. Consider adding relevant ones.</p>
+                        <div className="flex flex-wrap gap-2">
+                          {missing.map(kw => (
+                            <span key={kw} className="px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-full text-xs font-medium">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Matched keywords */}
+                    {matched.length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wide text-violet-600 mb-2">✅ Matched keywords ({matched.length})</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {matched.map(kw => (
+                            <span key={kw} className="px-2.5 py-1 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-xs font-medium">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setShowJobMatch(false)} className="w-full py-2 text-gray-500 hover:text-gray-800 text-sm font-medium">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── TEMPLATE SWITCHER PANEL ─────────────────────────────────────── */}
       {showTemplateSwitcher && (
