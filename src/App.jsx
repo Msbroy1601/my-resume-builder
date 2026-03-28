@@ -3,6 +3,7 @@ import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp, AuthenticateWith
 import Home from './pages/Home'
 import TemplateGallery from './pages/TemplateGallery'
 import Builder from './pages/Builder'
+import CoverLetter from './pages/CoverLetter'
 
 function ProtectedRoute({ children }) {
   return (
@@ -61,13 +62,21 @@ function App() {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/builder" 
+      <Route
+        path="/builder"
         element={
           <ProtectedRoute>
             <Builder />
           </ProtectedRoute>
-        } 
+        }
+      />
+      <Route
+        path="/cover-letter"
+        element={
+          <ProtectedRoute>
+            <CoverLetter />
+          </ProtectedRoute>
+        }
       />
     </Routes>
   )

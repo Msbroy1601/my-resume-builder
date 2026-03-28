@@ -2426,6 +2426,7 @@ const BlueSidebarTemplate = () => (
               <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">🔍 ATS Check</button>
               <button onClick={handleJobMatch} className="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg font-semibold hover:bg-violet-100 transition text-sm border border-violet-200">🎯 Job Match</button>
               <button onClick={handleOpenCloudPanel} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-lg font-semibold hover:bg-sky-100 transition text-sm border border-sky-200">☁️ Cloud Saves</button>
+              <button onClick={() => navigate('/cover-letter')} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-semibold hover:bg-blue-100 transition text-sm border border-blue-200">✉️ Cover Letter</button>
               <button onClick={() => { setShowTuneUp(true); setTuneUpMsg(null) }} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-lg font-semibold hover:bg-rose-100 transition text-sm border border-rose-200">✨ Tune-Up</button>
               <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">💾 Save</button>
               <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">🗑️ Clear All</button>
@@ -3724,6 +3725,12 @@ const BlueSidebarTemplate = () => (
             {/* Cards */}
             <div className="p-5 space-y-3">
               {[
+                {
+                  icon: '✉️', color: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
+                  title: 'Write a cover letter',
+                  desc: 'Generate a matching cover letter in seconds using your CV data',
+                  action: () => { setShowWhatsNext(false); navigate('/cover-letter') }
+                },
                 {
                   icon: '🔍', color: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
                   title: 'Check your ATS score',
