@@ -30,6 +30,7 @@ export default function TemplateGallery() {
   const navigate = useNavigate()
   const { isSignedIn } = useUser()
   const [modalIdx, setModalIdx] = useState(null) // index into TEMPLATES, or null
+  const [choiceTemplateId, setChoiceTemplateId] = useState(null) // template chosen, waiting for start choice
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function TemplateGallery() {
 
   const handleSelect = (templateId) => {
     if (!isSignedIn) { navigate('/login'); return }
-    navigate(`/builder?template=${templateId}`)
+    setModalIdx(null) // close preview modal if open
+    setChoiceTemplateId(templateId)
   }
 
   const activeTemplate = modalIdx !== null ? TEMPLATES[modalIdx] : null
@@ -131,6 +133,72 @@ export default function TemplateGallery() {
 
         <p className="text-center text-sm text-gray-500 mt-8">All templates are free to use. More coming soon!</p>
       </div>
+
+      {/* ── Start Choice Modal ── */}
+      {choiceTemplateId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
+          onClick={() => setChoiceTemplateId(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-8 pt-8 pb-5 text-center border-b border-gray-100">
+              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+                {TEMPLATES.find(t => t.id === choiceTemplateId)?.badge?.includes('Photo') ? '📷' : '✨'}
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {TEMPLATES.find(t => t.id === choiceTemplateId)?.name} selected
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">How would you like to start?</p>
+            </div>
+
+            {/* Two options */}
+            <div className="p-6 space-y-3">
+              {/* Import option */}
+              <button
+                onClick={() => navigate(`/builder?template=${choiceTemplateId}&import=true`)}
+                className="w-full flex items-start gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition text-left group"
+              >
+                <div className="w-11 h-11 bg-orange-100 group-hover:bg-orange-200 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition">
+                  📤
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Import my existing CV</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Upload a PDF, Word doc, or TXT file — we'll pre-fill the form for you</p>
+                </div>
+              </button>
+
+              {/* Scratch option */}
+              <button
+                onClick={() => navigate(`/builder?template=${choiceTemplateId}`)}
+                className="w-full flex items-start gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition text-left group"
+              >
+                <div className="w-11 h-11 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition">
+                  ✏️
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Start from scratch</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Fill in your details fresh with role-based suggestions as you type</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Back */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setChoiceTemplateId(null)}
+                className="w-full py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm hover:bg-gray-50 transition"
+              >
+                ← Back to templates
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Preview Modal ── */}
       {activeTemplate && (

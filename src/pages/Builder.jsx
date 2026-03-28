@@ -991,6 +991,11 @@ function Builder() {
   useEffect(() => {
     const t = searchParams.get('template')
     if (t) setSelectedTemplate(t)
+    if (searchParams.get('import') === 'true') {
+      setShowImport(true)
+      setImportMsg(null)
+      setImportPreview(null)
+    }
   }, [searchParams])
 
   const handleSave = () => {
@@ -1386,6 +1391,8 @@ function Builder() {
   const [showTuneUp, setShowTuneUp] = useState(false)
   const [tuneUpLoading, setTuneUpLoading] = useState(false)
   const [tuneUpMsg, setTuneUpMsg] = useState(null) // null | { type: 'success'|'error', text: string }
+
+  const [showWhatsNext, setShowWhatsNext] = useState(false)
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -1807,7 +1814,7 @@ function Builder() {
       pagebreak: { mode: 'avoid-all', before: '.page-break-before', avoid: ['h2', 'h3', '.job-entry', '.edu-entry'] }
     }
     html2pdf().set(opt).from(element).save()
-      .then(() => setIsDownloading(false))
+      .then(() => { setIsDownloading(false); setShowWhatsNext(true) })
       .catch(() => { setIsDownloading(false); alert('❌ Error generating PDF.') })
   }
 
@@ -2433,6 +2440,57 @@ const BlueSidebarTemplate = () => (
 
           {/* LEFT: FORM */}
           <div className="space-y-6">
+
+            {/* ── SECTION PROGRESS BAR ── */}
+            {(() => {
+              const sections = [
+                { label: 'Personal', icon: '👤', heading: 'Personal Information', done: name.trim().length > 0 && email.trim().length > 0 },
+                { label: 'Summary',  icon: '📝', heading: 'Professional Summary',  done: summary.trim().length >= 50 },
+                { label: 'Experience', icon: '💼', heading: 'Work Experience',      done: workExperiences.length > 0 },
+                { label: 'Education', icon: '🎓', heading: 'Education',             done: educationList.length > 0 },
+                { label: 'Skills',   icon: '⚡', heading: 'Skills',                done: skillsList.length >= 3 },
+                { label: 'Projects', icon: '🚀', heading: 'Projects',              done: projects.length > 0 },
+                { label: 'Extras',   icon: '🏆', heading: 'Certifications',        done: certifications.length > 0 || languages.length > 0 || !!hobbies.trim() },
+              ]
+              const doneCount = sections.filter(s => s.done).length
+              const pct = Math.round((doneCount / sections.length) * 100)
+              const scrollTo = (heading) => {
+                const el = [...document.querySelectorAll('h2')].find(h => h.textContent.includes(heading))
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+              return (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Sections</p>
+                    <p className="text-xs text-gray-400">{doneCount}/{sections.length} complete</p>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {sections.map(s => (
+                      <button
+                        key={s.label}
+                        onClick={() => scrollTo(s.heading)}
+                        title={s.done ? `${s.label} ✓` : `${s.label} — click to fill`}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition border ${
+                          s.done
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100 hover:text-gray-600'
+                        }`}
+                      >
+                        <span>{s.icon}</span>
+                        <span>{s.label}</span>
+                        {s.done && <span className="text-emerald-500">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500"
+                      style={{width: `${pct}%`}}
+                    />
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Personal Info */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
@@ -3646,6 +3704,69 @@ const BlueSidebarTemplate = () => (
                 className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition text-sm"
               >
                 ✓ Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── WHAT'S NEXT MODAL ────────────────────────────────────────── */}
+      {showWhatsNext && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-6 py-5 text-white relative">
+              <button onClick={() => setShowWhatsNext(false)} className="absolute top-4 right-4 text-white/70 hover:text-white text-xl font-bold">✕</button>
+              <div className="text-3xl mb-2">🎉</div>
+              <h2 className="text-xl font-bold">Your CV is ready!</h2>
+              <p className="text-emerald-100 text-sm mt-1">Here are a few things you can do next</p>
+            </div>
+            {/* Cards */}
+            <div className="p-5 space-y-3">
+              {[
+                {
+                  icon: '🔍', color: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+                  title: 'Check your ATS score',
+                  desc: 'See how well your CV will pass automated screening filters',
+                  action: () => { setShowWhatsNext(false); handleATSCheck() }
+                },
+                {
+                  icon: '🎯', color: 'bg-violet-50 border-violet-200 hover:bg-violet-100',
+                  title: 'Match to a job description',
+                  desc: 'Paste a job posting and see which keywords you\'re missing',
+                  action: () => { setShowWhatsNext(false); setShowJobMatch(true) }
+                },
+                {
+                  icon: '✨', color: 'bg-rose-50 border-rose-200 hover:bg-rose-100',
+                  title: 'Get an expert CV review',
+                  desc: 'A hiring specialist reviews your CV within 24 hours — ₹499',
+                  action: () => { setShowWhatsNext(false); setShowTuneUp(true); setTuneUpMsg(null) }
+                },
+                {
+                  icon: '🔗', color: 'bg-sky-50 border-sky-200 hover:bg-sky-100',
+                  title: 'Find matching jobs',
+                  desc: 'Search for roles that match your experience on Naukri & LinkedIn',
+                  action: () => {
+                    const query = encodeURIComponent((workExperiences[0]?.jobTitle || name || 'jobs') + ' jobs India')
+                    window.open(`https://www.naukri.com/jobs-by-keyword?q=${query}`, '_blank')
+                    setShowWhatsNext(false)
+                  }
+                },
+              ].map(card => (
+                <button key={card.title} onClick={card.action}
+                  className={`w-full flex items-start gap-4 p-4 rounded-xl border text-left transition ${card.color}`}>
+                  <span className="text-2xl flex-shrink-0">{card.icon}</span>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{card.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{card.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="px-5 pb-5">
+              <button onClick={() => setShowWhatsNext(false)}
+                className="w-full py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm hover:bg-gray-50 transition">
+                Close
               </button>
             </div>
           </div>
