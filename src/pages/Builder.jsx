@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useUser, useClerk } from '@clerk/clerk-react'
 import html2pdf from 'html2pdf.js'
+import { supabase } from '../lib/supabase'
 
 // ─── DATA: JOB ROLES ──────────────────────────────────────────────────────────
 const JOB_ROLES = {
@@ -1111,6 +1112,110 @@ function Builder() {
     setShowATS(true)
   }
 
+  // ─── CLOUD SAVE ───────────────────────────────────────────────────────────────
+  const [showCloudPanel, setShowCloudPanel] = useState(false)
+  const [cloudSaves, setCloudSaves] = useState([])
+  const [cloudSaveName, setCloudSaveName] = useState('')
+  const [currentResumeId, setCurrentResumeId] = useState(null) // id of loaded cloud resume
+  const [cloudLoading, setCloudLoading] = useState(false)
+  const [cloudMsg, setCloudMsg] = useState(null) // { type: 'success'|'error', text }
+
+  const getResumeData = () => ({
+    name, email, phone, location, summary,
+    workExperiences, educationList, projects,
+    skillsList, certifications, websiteLinks,
+    languages, hobbies, selectedTemplate, photo,
+  })
+
+  const applyResumeData = (data) => {
+    if (data.name !== undefined) setName(data.name)
+    if (data.email !== undefined) setEmail(data.email)
+    if (data.phone !== undefined) setPhone(data.phone)
+    if (data.location !== undefined) setLocation(data.location)
+    if (data.summary !== undefined) setSummary(data.summary)
+    if (data.workExperiences) setWorkExperiences(data.workExperiences)
+    if (data.educationList) setEducationList(data.educationList)
+    if (data.projects) setProjects(data.projects)
+    if (data.skillsList) setSkillsList(data.skillsList)
+    if (data.certifications) setCertifications(data.certifications)
+    if (data.websiteLinks) setWebsiteLinks(data.websiteLinks)
+    if (data.languages) setLanguages(data.languages)
+    if (data.hobbies !== undefined) setHobbies(data.hobbies)
+    if (data.selectedTemplate) setSelectedTemplate(data.selectedTemplate)
+    if (data.photo !== undefined) setPhoto(data.photo)
+  }
+
+  const fetchCloudSaves = useCallback(async () => {
+    if (!user) return
+    setCloudLoading(true)
+    const { data, error } = await supabase
+      .from('resumes')
+      .select('id, resume_name, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+    setCloudLoading(false)
+    if (!error) setCloudSaves(data || [])
+  }, [user])
+
+  const saveToCloud = async () => {
+    if (!user || !cloudSaveName.trim()) return
+    setCloudLoading(true)
+    setCloudMsg(null)
+    const payload = {
+      user_id: user.id,
+      resume_name: cloudSaveName.trim(),
+      data: getResumeData(),
+      updated_at: new Date().toISOString(),
+    }
+    let error
+    if (currentResumeId) {
+      // Update existing record
+      const res = await supabase.from('resumes').update(payload).eq('id', currentResumeId).eq('user_id', user.id)
+      error = res.error
+    } else {
+      // Insert new record
+      const res = await supabase.from('resumes').insert(payload).select().single()
+      error = res.error
+      if (!error && res.data) setCurrentResumeId(res.data.id)
+    }
+    setCloudLoading(false)
+    if (error) {
+      setCloudMsg({ type: 'error', text: 'Save failed — check your Supabase setup.' })
+    } else {
+      setCloudMsg({ type: 'success', text: `"${cloudSaveName.trim()}" saved to cloud ✓` })
+      fetchCloudSaves()
+    }
+  }
+
+  const loadFromCloud = async (resume) => {
+    setCloudLoading(true)
+    const { data, error } = await supabase
+      .from('resumes')
+      .select('data')
+      .eq('id', resume.id)
+      .eq('user_id', user.id)
+      .single()
+    setCloudLoading(false)
+    if (error || !data) return
+    applyResumeData(data.data)
+    setCurrentResumeId(resume.id)
+    setCloudSaveName(resume.resume_name)
+    setCloudMsg({ type: 'success', text: `"${resume.resume_name}" loaded ✓` })
+  }
+
+  const deleteFromCloud = async (id) => {
+    if (!window.confirm('Delete this saved resume?')) return
+    await supabase.from('resumes').delete().eq('id', id).eq('user_id', user.id)
+    if (currentResumeId === id) { setCurrentResumeId(null); setCloudSaveName('') }
+    fetchCloudSaves()
+  }
+
+  const handleOpenCloudPanel = () => {
+    fetchCloudSaves()
+    setCloudMsg(null)
+    setShowCloudPanel(true)
+  }
+
   // ─── JOB MATCH SCORE ─────────────────────────────────────────────────────────
   const STOP_WORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with','by','from',
@@ -2014,6 +2119,7 @@ const BlueSidebarTemplate = () => (
               <button onClick={() => setShowTemplateSwitcher(true)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition text-sm border border-indigo-200">🎨 Switch Template</button>
               <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">🔍 ATS Check</button>
               <button onClick={handleJobMatch} className="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg font-semibold hover:bg-violet-100 transition text-sm border border-violet-200">🎯 Job Match</button>
+              <button onClick={handleOpenCloudPanel} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-lg font-semibold hover:bg-sky-100 transition text-sm border border-sky-200">☁️ Cloud Saves</button>
               <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">💾 Save</button>
               <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">🗑️ Clear All</button>
               <button onClick={() => { if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition text-sm">Log Out</button>
@@ -2905,6 +3011,103 @@ const BlueSidebarTemplate = () => (
 
             <div className="px-6 py-4 border-t border-gray-100">
               <button onClick={() => setShowJobMatch(false)} className="w-full py-2 text-gray-500 hover:text-gray-800 text-sm font-medium">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CLOUD SAVES PANEL ───────────────────────────────────────────── */}
+      {showCloudPanel && (
+        <div className="fixed inset-0 z-50 flex" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCloudPanel(false)}>
+          <div className="ml-auto h-full bg-white shadow-2xl flex flex-col" style={{ width: '400px', maxWidth: '95vw' }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">☁️ Cloud Saves</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Save and switch between multiple CV versions</p>
+              </div>
+              <button onClick={() => setShowCloudPanel(false)} className="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light">×</button>
+            </div>
+
+            {/* Save current */}
+            <div className="px-5 py-4 border-b border-gray-100 bg-sky-50">
+              <p className="text-xs font-semibold text-sky-700 mb-2">
+                {currentResumeId ? '📝 Editing:' : '💾 Save current CV as:'}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={cloudSaveName}
+                  onChange={e => setCloudSaveName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveToCloud()}
+                  placeholder="e.g. Google Application, Senior Dev CV..."
+                  className="flex-1 px-3 py-2 border border-sky-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+                />
+                <button
+                  onClick={saveToCloud}
+                  disabled={cloudLoading || !cloudSaveName.trim()}
+                  className="px-4 py-2 bg-sky-600 text-white rounded-lg font-semibold text-sm hover:bg-sky-700 transition disabled:opacity-40"
+                >
+                  {cloudLoading ? '…' : currentResumeId ? 'Update' : 'Save'}
+                </button>
+              </div>
+              {cloudMsg && (
+                <p className={`text-xs mt-2 font-medium ${cloudMsg.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {cloudMsg.text}
+                </p>
+              )}
+              {currentResumeId && (
+                <button onClick={() => { setCurrentResumeId(null); setCloudSaveName('') }} className="text-xs text-sky-500 hover:text-sky-700 mt-1 underline">
+                  + Save as new instead
+                </button>
+              )}
+            </div>
+
+            {/* Saved list */}
+            <div className="flex-1 overflow-y-auto">
+              {cloudLoading && cloudSaves.length === 0 ? (
+                <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
+              ) : cloudSaves.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-gray-400 gap-2">
+                  <span className="text-3xl">☁️</span>
+                  <p className="text-sm">No saved CVs yet.</p>
+                  <p className="text-xs">Give your current CV a name and hit Save.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {cloudSaves.map(r => (
+                    <div key={r.id} className={`flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition ${currentResumeId === r.id ? 'bg-sky-50' : ''}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{r.resume_name}</p>
+                          {currentResumeId === r.id && <span className="text-[10px] bg-sky-100 text-sky-600 rounded-full px-2 py-0.5 font-medium flex-shrink-0">active</span>}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(r.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => loadFromCloud(r)}
+                        className="px-3 py-1.5 text-xs font-semibold bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition flex-shrink-0"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => deleteFromCloud(r.id)}
+                        className="px-2.5 py-1.5 text-xs font-semibold bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition flex-shrink-0"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
+              <button onClick={() => setShowCloudPanel(false)} className="w-full py-2.5 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition text-sm">Done</button>
             </div>
           </div>
         </div>
