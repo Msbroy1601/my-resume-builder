@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import TemplateGallery from './pages/TemplateGallery'
 import Builder from './pages/Builder'
 import CoverLetter from './pages/CoverLetter'
+import Dashboard from './pages/Dashboard'
 
 function ProtectedRoute({ children }) {
   return (
@@ -48,6 +49,11 @@ function App() {
         path="/cover-letter"
         element={
           <ProtectedRoute> <CoverLetter />
+</ProtectedRoute> }
+      /> <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute> <Dashboard />
 </ProtectedRoute> }
       />
 </Routes> )

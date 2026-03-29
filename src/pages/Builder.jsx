@@ -622,25 +622,28 @@ const BulletList = ({ text, className = '' }) =>{
 </ul> )
 }
 
-//  DATA: TEMPLATES (for in-builder switcher) 
+//  DATA: TEMPLATES (for in-builder switcher)
+// First 5 are FREE; the rest require Pro
+const FREE_TEMPLATE_IDS = ['modern', 'classic', 'minimal', 'professional', 'sidebar']
+
 const TEMPLATE_LIST = [
   { id: 'modern',       name: 'Modern',        badge: 'Popular' },
   { id: 'classic',      name: 'Classic',        badge: '' },
   { id: 'minimal',      name: 'Minimal',        badge: '' },
-  { id: 'creative',     name: 'Creative',       badge: '' },
   { id: 'professional', name: 'Professional',   badge: 'ATS Friendly' },
-  { id: 'sidebar',      name: 'Sidebar',        badge: ' Photo' },
+  { id: 'sidebar',      name: 'Sidebar',        badge: 'Photo' },
   { id: 'elegant',      name: 'Elegant',        badge: '' },
   { id: 'tech',         name: 'Tech',           badge: 'For Devs' },
-  { id: 'greensidebar', name: 'Green Sidebar',  badge: ' Photo' },
-  { id: 'goldheader',   name: 'Gold Header',    badge: ' Photo' },
-  { id: 'classicserif', name: 'Classic Serif',  badge: ' Photo' },
-  { id: 'coral',        name: 'Coral',          badge: ' Photo' },
-  { id: 'amber',        name: 'Amber',          badge: ' Photo' },
-  { id: 'serif2',       name: 'Formal Serif',   badge: ' Photo' },
+  { id: 'greensidebar', name: 'Green Sidebar',  badge: 'Photo' },
+  { id: 'goldheader',   name: 'Gold Header',    badge: 'Photo' },
+  { id: 'classicserif', name: 'Classic Serif',  badge: 'Photo' },
+  { id: 'coral',        name: 'Coral',          badge: 'Photo' },
+  { id: 'amber',        name: 'Amber',          badge: 'Photo' },
+  { id: 'serif2',       name: 'Formal Serif',   badge: 'Photo' },
   { id: 'hexagon',      name: 'Hexagon',        badge: '' },
-  { id: 'navy',         name: 'Navy Icons',     badge: ' Photo' },
-  { id: 'bluesidebar',  name: 'Blue Sidebar',   badge: ' Photo' },
+  { id: 'navy',         name: 'Navy Icons',     badge: 'Photo' },
+  { id: 'bluesidebar',  name: 'Blue Sidebar',   badge: 'Photo' },
+  { id: 'creative',     name: 'Creative',       badge: '' },
 ]
 
 //  COMPONENT: Searchable Dropdown 
@@ -834,6 +837,11 @@ function Builder() {
   const displayName = currentUser?.firstName || currentUser?.fullName || 'there'
 
   const [selectedTemplate, setSelectedTemplate] = useState(searchParams.get('template') || 'modern')
+  const [userPlan, setUserPlan] = useState('free')        // 'free' | 'pro'
+  const [showUpgrade, setShowUpgrade] = useState(false)   // upgrade paywall modal
+  const [upgradeLoading, setUpgradeLoading] = useState(false)
+  const [upgradeMsg, setUpgradeMsg] = useState(null)
+  const isPro = userPlan === 'pro'
 
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState('')
@@ -924,6 +932,20 @@ function Builder() {
       }
     } catch (e) { console.error(e) }
   }, [])
+
+  // Fetch user's plan from Supabase
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('user_upgrades')
+      .select('plan')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.plan === 'pro') setUserPlan('pro')
+      })
+      .catch(() => {}) // table may not exist yet — default to free
+  }, [user])
 
   useEffect(() =>{
     const t = searchParams.get('template')
@@ -1084,7 +1106,7 @@ function Builder() {
     const tip = missing.length >0
       ? `Add ${missing[0].label.toLowerCase()} to boost your score (+${missing[0].pts} pts)`
       : 'Your resume is looking great! '
-    const color = pct >= 90 ? '#10b981' : pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444'
+    const color = pct >= 90 ? '#1a2744' : pct >= 70 ? '#2d5a8e' : pct >= 40 ? '#b45309' : '#8b1a2e'
     const label = pct >= 90 ? 'Excellent' : pct >= 70 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs work'
     return { pct, tip, color, label, missing }
   }
@@ -1261,7 +1283,61 @@ function Builder() {
     rzp.open()
   }
 
-  //  JOB MATCH SCORE 
+  //  PRO PLAN UPGRADE
+  const handleProUpgrade = async () => {
+    setUpgradeLoading(true)
+    setUpgradeMsg(null)
+    const loaded = await loadRazorpay()
+    if (!loaded) {
+      setUpgradeMsg({ type: 'error', text: 'Could not load payment gateway. Please try again.' })
+      setUpgradeLoading(false)
+      return
+    }
+    const rzpKey = import.meta.env.VITE_RAZORPAY_KEY_ID
+    if (!rzpKey) {
+      setUpgradeMsg({ type: 'error', text: 'Payment not yet configured. Contact support.' })
+      setUpgradeLoading(false)
+      return
+    }
+    const options = {
+      key: rzpKey,
+      amount: 99900,  // ₹999 in paise — lifetime Pro access
+      currency: 'INR',
+      name: 'ResumeAI Pro',
+      description: 'Lifetime Pro Access — all templates + features unlocked',
+      image: 'https://my-resume-builder-nine.vercel.app/favicon.svg',
+      prefill: {
+        name: name || '',
+        email: user?.primaryEmailAddress?.emailAddress || '',
+      },
+      theme: { color: '#1a2744' },
+      handler: async (response) => {
+        try {
+          await supabase.from('user_upgrades').upsert({
+            user_id: user.id,
+            plan: 'pro',
+            payment_id: response.razorpay_payment_id,
+            purchased_at: new Date().toISOString(),
+          })
+          setUserPlan('pro')
+          setShowUpgrade(false)
+          setUpgradeMsg(null)
+        } catch (_) {
+          setUpgradeMsg({ type: 'error', text: 'Payment received but activation failed. Contact support.' })
+        }
+        setUpgradeLoading(false)
+      },
+      modal: { ondismiss: () => setUpgradeLoading(false) }
+    }
+    const rzp = new window.Razorpay(options)
+    rzp.on('payment.failed', (resp) => {
+      setUpgradeLoading(false)
+      setUpgradeMsg({ type: 'error', text: `Payment failed: ${resp.error.description}` })
+    })
+    rzp.open()
+  }
+
+  //  JOB MATCH SCORE
   const STOP_WORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with','by','from',
     'as','is','was','are','were','be','been','being','have','has','had','do','does','did',
@@ -1932,14 +2008,14 @@ function Builder() {
 </div>
 </div> <div className="bg-gray-50 rounded-xl p-3 text-center mb-5 border border-gray-200"> <p className="text-xs text-gray-500 mb-1">UPI ID</p> <p className="text-base font-bold text-gray-900 select-all">baishaliroy11@ybl</p> <p className="text-xs text-gray-400 mt-1">PhonePe / GPay / Paytm / Any UPI app</p>
 </div> <button onClick={triggerDownload} disabled={isDownloading}
-          className={`w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center justify-center gap-2 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? '⏳ Generating PDF...' : ' Download My Resume'}
+          className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-xl font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center gap-2 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download My Resume'}
 </button> <p className="text-center text-xs text-gray-400 mt-3">No payment needed — but your support means a lot!</p>
 </div>
 </div> )
 
   //  Templates 
   const ModernTemplate = () =>(
-    <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
+    <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
 </button>
 </div> <div id="resume-preview" className="border-t-2 border-gray-200 pt-6"> <div className="mb-8 pb-8 border-b-2 border-gray-200"> <h3 className="text-4xl font-bold text-gray-900 mb-3 leading-tight tracking-tight">{name || 'Your Name'}</h3> <p className="text-base text-gray-600 mb-1">{email || 'your.email@example.com'}</p> <p className="text-base text-gray-600">{phone || '+91 98765 43210'}</p> {location && <p className="text-base text-gray-600 mt-0.5">{location}</p>}
 </div> {summary && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-4 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-700 leading-relaxed">{summary}</p></div>)}
@@ -1956,7 +2032,7 @@ function Builder() {
 </div> )
 
   const ClassicTemplate = () =>(
-    <div className="p-10 bg-white shadow-xl border-4 border-gray-900"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gray-900 text-white py-4 px-6 font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="border-t-4 border-gray-900 pt-8"> <div className="mb-10 text-center"><h3 className="text-5xl font-bold text-gray-900 mb-3 uppercase tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center justify-center gap-3 text-base text-gray-700"><span>{email || 'your.email@example.com'}</span><span className="font-bold">•</span><span>{phone || '+91 98765 43210'}</span>{location && <><span className="font-bold">•</span><span>{location}</span></>}</div></div> {summary && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Summary</h3><p className="text-base text-gray-800 leading-relaxed">{summary}</p></div>)}
+    <div className="p-10 bg-white shadow-xl border-4 border-gray-900"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="border-t-4 border-gray-900 pt-8"> <div className="mb-10 text-center"><h3 className="text-5xl font-bold text-gray-900 mb-3 uppercase tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center justify-center gap-3 text-base text-gray-700"><span>{email || 'your.email@example.com'}</span><span className="font-bold">•</span><span>{phone || '+91 98765 43210'}</span>{location && <><span className="font-bold">•</span><span>{location}</span></>}</div></div> {summary && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Summary</h3><p className="text-base text-gray-800 leading-relaxed">{summary}</p></div>)}
         {workExperiences.length >0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) =>(<div key={i}><p className="font-bold text-gray-900 text-lg mb-1">{exp.jobTitle}</p><p className="text-base text-gray-800 italic mb-2">{exp.company} | {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Projects</h3><div className="space-y-4">{projects.map((proj, i) =>(<div key={i}><p className="font-bold text-gray-900 text-base">{proj.name}</p>{proj.description && <p className="text-base text-gray-800 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-gray-600 italic mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
@@ -1970,7 +2046,7 @@ function Builder() {
 </div> )
 
   const MinimalTemplate = () =>(
-    <div className="p-12 bg-white"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-black text-white py-4 px-6 font-medium text-lg hover:bg-gray-800 transition flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="border-t border-gray-300 pt-10"> <div className="mb-12"><h3 className="text-6xl font-light text-gray-900 mb-4 tracking-tight">{name || 'Your Name'}</h3><p className="text-base text-gray-600">{email || 'your.email@example.com'}</p><p className="text-base text-gray-600">{phone || '+91 98765 43210'}</p>{location && <p className="text-base text-gray-600">{location}</p>}</div> {summary && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-widest uppercase">About</h3><p className="text-base text-gray-700 leading-relaxed font-light">{summary}</p></div>)}
+    <div className="p-12 bg-white"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="border-t border-gray-300 pt-10"> <div className="mb-12"><h3 className="text-6xl font-light text-gray-900 mb-4 tracking-tight">{name || 'Your Name'}</h3><p className="text-base text-gray-600">{email || 'your.email@example.com'}</p><p className="text-base text-gray-600">{phone || '+91 98765 43210'}</p>{location && <p className="text-base text-gray-600">{location}</p>}</div> {summary && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-4 tracking-widest uppercase">About</h3><p className="text-base text-gray-700 leading-relaxed font-light">{summary}</p></div>)}
         {workExperiences.length >0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Experience</h3><div className="space-y-8">{workExperiences.map((exp, i) =>(<div key={i}><p className="text-lg font-medium text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-gray-600 font-light mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-light">{formatDate(exp.startMonth, exp.startYear)} — {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Projects</h3><div className="space-y-5">{projects.map((proj, i) =>(<div key={i}><p className="text-base font-medium text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 font-light mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-gray-400 font-light mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
@@ -1984,7 +2060,7 @@ function Builder() {
 </div> )
 
   const CreativeTemplate = () =>(
-    <div className="p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-xl shadow-2xl border-4 border-purple-300"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-xl flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="bg-white rounded-2xl p-8 shadow-xl"> <div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 mb-4 leading-tight">{name || 'Your Name'}</h3><p className="text-base text-gray-700 font-medium">{email || 'your.email@example.com'}</p><p className="text-base text-gray-700 font-medium">{phone || '+91 98765 43210'}</p>{location && <p className="text-base text-gray-700 font-medium">{location}</p>}</div> {summary && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-5 border-l-4 border-purple-500"><h3 className="text-lg font-bold text-purple-900 mb-3 uppercase tracking-wide">About Me</h3><p className="text-base text-gray-800 leading-relaxed">{summary}</p></div></div>)}
+    <div className="p-8 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-xl shadow-2xl border-4 border-purple-300"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="bg-white rounded-2xl p-8 shadow-xl"> <div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 mb-4 leading-tight">{name || 'Your Name'}</h3><p className="text-base text-gray-700 font-medium">{email || 'your.email@example.com'}</p><p className="text-base text-gray-700 font-medium">{phone || '+91 98765 43210'}</p>{location && <p className="text-base text-gray-700 font-medium">{location}</p>}</div> {summary && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-5 border-l-4 border-purple-500"><h3 className="text-lg font-bold text-purple-900 mb-3 uppercase tracking-wide">About Me</h3><p className="text-base text-gray-800 leading-relaxed">{summary}</p></div></div>)}
         {workExperiences.length >0 && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-lg font-bold text-purple-600 mb-6 uppercase tracking-wide flex items-center">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) =>(<div key={i} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-l-4 border-pink-500"><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-purple-600 font-bold mb-1">{exp.company}</p><p className="text-sm text-gray-600 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-8 pb-8 border-b-2 border-purple-200"><h3 className="text-lg font-bold text-purple-600 mb-6 uppercase tracking-wide flex items-center">Projects</h3><div className="space-y-5">{projects.map((proj, i) =>(<div key={i} className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5 border-l-4 border-indigo-500"><p className="text-lg font-bold text-gray-900 mb-1">{proj.name}</p>{proj.description && <p className="text-base text-gray-800 mb-1">{proj.description}</p>}{proj.link && <p className="text-sm text-indigo-500"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
@@ -1998,7 +2074,7 @@ function Builder() {
 </div> )
 
   const ProfessionalTemplate = () =>(
-    <div className="p-10 bg-white shadow-2xl border-l-8 border-blue-600"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="border-t-2 border-blue-600 pt-8"> <div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-4xl font-bold text-gray-900 mb-3 uppercase tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center gap-4 text-base text-gray-700"><span>{email || 'your.email@example.com'}</span><span className="text-gray-400">|</span><span>{phone || '+91 98765 43210'}</span>{location && <><span className="text-gray-400">|</span><span>{location}</span></>}</div></div> {summary && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-800 leading-relaxed ml-5">{summary}</p></div>)}
+    <div className="p-10 bg-white shadow-2xl border-l-8 border-blue-600"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="border-t-2 border-blue-600 pt-8"> <div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-4xl font-bold text-gray-900 mb-3 uppercase tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center gap-4 text-base text-gray-700"><span>{email || 'your.email@example.com'}</span><span className="text-gray-400">|</span><span>{phone || '+91 98765 43210'}</span>{location && <><span className="text-gray-400">|</span><span>{location}</span></>}</div></div> {summary && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Professional Summary</h3><p className="text-base text-gray-800 leading-relaxed ml-5">{summary}</p></div>)}
         {workExperiences.length >0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Professional Experience</h3><div className="space-y-6 ml-5">{workExperiences.map((exp, i) =>(<div key={i}><div className="flex justify-between items-baseline mb-2"><p className="text-xl font-bold text-gray-900">{exp.jobTitle}</p><p className="text-sm text-gray-600 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p></div><p className="text-base text-blue-600 font-semibold mb-3">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Projects</h3><div className="space-y-5 ml-5">{projects.map((proj, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-800 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-blue-500 mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
@@ -2012,7 +2088,7 @@ function Builder() {
 </div> )
 
   const SidebarTemplate = () =>(
-    <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-8 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-green-700 hover:to-teal-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}> <div style={{float:"left", width:"33%"}} className="bg-gradient-to-b from-green-700 to-teal-700 text-white p-8"> {photo ? <img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-green-400 mx-auto mb-5 shadow-md" />: <div className="w-16 h-16 rounded-full bg-green-600 border-4 border-green-400 mx-auto mb-5 flex items-center justify-center text-xl font-bold text-white">{name ? name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'YN'}</div>}
+    <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-8 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}> <div style={{float:"left", width:"33%"}} className="bg-gradient-to-b from-green-700 to-teal-700 text-white p-8"> {photo ? <img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-green-400 mx-auto mb-5 shadow-md" />: <div className="w-16 h-16 rounded-full bg-green-600 border-4 border-green-400 mx-auto mb-5 flex items-center justify-center text-xl font-bold text-white">{name ? name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'YN'}</div>}
           <div className="mb-8"><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Contact</h3><div className="space-y-3 text-sm"><div><p className="text-green-200 text-xs mb-1">Email</p><p className="break-words">{email || 'your.email@example.com'}</p></div><div><p className="text-green-200 text-xs mb-1">Phone</p><p>{phone || '+91 98765 43210'}</p></div>{location && <div><p className="text-green-200 text-xs mb-1">Location</p><p>{location}</p></div>}</div></div> {skillsList.length >0 && (<div className="mb-8"><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Skills</h3><div className="space-y-2">{skillsList.map((sk,i) =>(<div key={i} className="flex items-center justify-between text-sm"><span className="flex items-center">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2 h-2 rounded-full ${sk.level>=n?'bg-green-300':'bg-green-800'}`}></span>)}</div></div>))}</div></div>)}
           {certifications.length >0 && (<div className="mb-8"><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Certifications</h3><div className="space-y-2">{certifications.map((cert,i) =>(<div key={i}><p className="text-sm font-semibold">{cert.name}</p>{(cert.issuer||cert.year) && <p className="text-xs text-green-200">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}</div>))}</div></div>)}
           {languages.length >0 && (<div className="mb-8"><h3 className="text-sm font-bold mb-4 uppercase tracking-wider border-b border-green-300 pb-2">Languages</h3><div className="space-y-2">{languages.map((lang,i) =>(<div key={i}><p className="text-sm font-semibold">{lang.name}</p><div className="flex gap-1 mt-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-green-300':'bg-green-800'}`}></span>)}</div></div>))}</div></div>)}
@@ -2028,7 +2104,7 @@ function Builder() {
 </div> )
 
   const ElegantTemplate = () =>(
-    <div className="p-10 bg-gradient-to-br from-rose-50 to-orange-50 shadow-2xl"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-rose-600 to-orange-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-rose-700 hover:to-orange-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="bg-white p-10 rounded-lg shadow-xl"> <div className="text-center mb-10 pb-8 border-b-2 border-rose-200"><h3 className="text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center justify-center gap-3 text-base text-gray-600 italic"><span>{email || 'your.email@example.com'}</span><span>{phone || '+91 98765 43210'}</span>{location && <><span>{location}</span></>}</div></div> {summary && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-4 text-center italic">Professional Profile</h3><p className="text-base text-gray-700 leading-relaxed text-center italic">{summary}</p></div>)}
+    <div className="p-10 bg-gradient-to-br from-rose-50 to-orange-50 shadow-2xl"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="bg-white p-10 rounded-lg shadow-xl"> <div className="text-center mb-10 pb-8 border-b-2 border-rose-200"><h3 className="text-5xl font-serif font-bold text-gray-900 mb-4 tracking-tight">{name || 'Your Name'}</h3><div className="flex items-center justify-center gap-3 text-base text-gray-600 italic"><span>{email || 'your.email@example.com'}</span><span>{phone || '+91 98765 43210'}</span>{location && <><span>{location}</span></>}</div></div> {summary && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-4 text-center italic">Professional Profile</h3><p className="text-base text-gray-700 leading-relaxed text-center italic">{summary}</p></div>)}
         {workExperiences.length >0 && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-6 text-center italic">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) =>(<div key={i} className="border-l-4 border-rose-300 pl-6"><p className="text-xl font-serif font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-rose-600 font-semibold mb-1 italic">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-10 pb-8 border-b border-rose-100"><h3 className="text-lg font-serif font-bold text-rose-600 mb-6 text-center italic">Projects</h3><div className="space-y-5">{projects.map((proj, i) =>(<div key={i} className="border-l-4 border-rose-200 pl-6"><p className="text-lg font-serif font-bold text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 italic mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-rose-400 mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
@@ -2042,7 +2118,7 @@ function Builder() {
 </div> )
 
   const TechTemplate = () =>(
-    <div className="p-8 bg-gray-900 shadow-2xl"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-violet-700 hover:to-purple-700 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="bg-white p-10 rounded-xl"> <div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 mb-3 leading-tight">{name || 'Your Name'}</h3><div className="flex items-center gap-3 text-base text-gray-600 font-mono"><span className="text-violet-600">$</span><span>{email || 'your.email@example.com'}</span><span className="text-violet-400">|</span><span>{phone || '+91 98765 43210'}</span>{location && <><span className="text-violet-400">|</span><span>{location}</span></>}</div></div> {summary && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-4 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>README.md</h3><div className="bg-gray-50 p-5 rounded-lg border-l-4 border-violet-500 font-mono text-sm"><p className="text-gray-700 leading-relaxed">{summary}</p></div></div>)}
+    <div className="p-8 bg-gray-900 shadow-2xl"> <div className="mb-6"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading ? 'Generating PDF...' : 'Download PDF'}</button></div> <div id="resume-preview" className="bg-white p-10 rounded-xl"> <div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 mb-3 leading-tight">{name || 'Your Name'}</h3><div className="flex items-center gap-3 text-base text-gray-600 font-mono"><span className="text-violet-600">$</span><span>{email || 'your.email@example.com'}</span><span className="text-violet-400">|</span><span>{phone || '+91 98765 43210'}</span>{location && <><span className="text-violet-400">|</span><span>{location}</span></>}</div></div> {summary && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-4 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>README.md</h3><div className="bg-gray-50 p-5 rounded-lg border-l-4 border-violet-500 font-mono text-sm"><p className="text-gray-700 leading-relaxed">{summary}</p></div></div>)}
         {workExperiences.length >0 && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-6 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) =>(<div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 p-5 rounded-lg border-l-4 border-purple-500"><p className="text-xl font-bold text-gray-900 mb-1 font-mono">{exp.jobTitle}</p><p className="text-base text-violet-600 font-semibold mb-1 font-mono">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-mono"><span className="text-violet-400">{'['}</span>{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}<span className="text-violet-400">{']'}</span></p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-8 pb-8 border-b-2 border-violet-200"><h3 className="text-lg font-bold text-violet-600 mb-6 uppercase tracking-wide font-mono flex items-center"><span className="text-violet-400 mr-2">{'>'}</span>Projects</h3><div className="space-y-5">{projects.map((proj, i) =>(<div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 p-5 rounded-lg border-l-4 border-violet-300"><p className="text-lg font-bold text-gray-900 font-mono">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-violet-500 font-mono mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
@@ -2057,7 +2133,7 @@ function Builder() {
 
 //  TEMPLATE 9: Green Sidebar 
 const GreenSidebarTemplate = () =>(
-  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-green-700 to-green-900 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-green-800 hover:to-green-950 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
+  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
 </button>
 </div> <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}> <div style={{float:"left", width:"33%"}} className="bg-green-800 text-white p-6 rounded-l-lg"> <div className="mb-6 text-center"> {photo
               ? <img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-green-400 mx-auto mb-3 shadow-md" /> : <div className="w-20 h-20 rounded-full bg-green-600 border-4 border-green-400 mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-white">{name ? name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'YN'}</div> }
@@ -2094,7 +2170,7 @@ const GreenSidebarTemplate = () =>(
 
 //  TEMPLATE 10: Gold Header 
 const GoldHeaderTemplate = () =>(
-  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-yellow-600 to-amber-700 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-yellow-700 hover:to-amber-800 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
+  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
 </button>
 </div> <div id="resume-preview"> {/* Gold header bar */}
       <div className="bg-gradient-to-r from-yellow-600 to-amber-600 text-white px-6 py-5 rounded-t-lg flex items-center gap-4"> {photo
@@ -2131,7 +2207,7 @@ const GoldHeaderTemplate = () =>(
 
 //  TEMPLATE 11: Classic Serif 
 const ClassicSerifTemplate = () =>(
-  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gray-800 text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-gray-900 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
+  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
 </button>
 </div> <div id="resume-preview"> {/* Header with photo placeholder + name */}
       <div className="flex items-center gap-5 mb-4 pb-4 border-b-2 border-gray-800"> {photo
@@ -2165,7 +2241,7 @@ const ClassicSerifTemplate = () =>(
 
 //  TEMPLATE 12: Coral Modern 
 const CoralTemplate = () =>(
-  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-orange-600 hover:to-rose-600 transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
+  <div className="p-8 bg-white rounded-xl shadow-xl border border-gray-200"> <div className="mb-6"> <button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}> {isDownloading ? 'Generating PDF...' : 'Download PDF'}
 </button>
 </div> <div id="resume-preview"> {/* Header */}
       <div className="flex items-center gap-4 mb-5 pb-5 border-b-2 border-orange-200"> {photo
@@ -2201,7 +2277,7 @@ const CoralTemplate = () =>(
 
 //  TEMPLATE 13: AMBER 
 const AmberTemplate = () =>(
-  <div className="bg-white shadow-2xl overflow-hidden font-sans"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-amber-600 to-yellow-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-amber-700 hover:to-yellow-700 transition shadow-lg flex items-center justify-center ${isDownloading?'opacity-50 cursor-not-allowed':''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white"> <div className="bg-amber-600 px-8 py-6 flex items-center gap-6"> {photo?<img src={photo} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-amber-300 shadow-lg flex-shrink-0"/>:<div className="w-24 h-24 rounded-full bg-amber-500 border-4 border-amber-300 flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
+  <div className="bg-white shadow-2xl overflow-hidden font-sans"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white"> <div className="bg-amber-600 px-8 py-6 flex items-center gap-6"> {photo?<img src={photo} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-amber-300 shadow-lg flex-shrink-0"/>:<div className="w-24 h-24 rounded-full bg-amber-500 border-4 border-amber-300 flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
         <div><h1 className="text-4xl font-bold text-white tracking-tight">{name||'Your Name'}</h1>{workExperiences.length>0&&<p className="text-amber-200 text-base mt-1 font-medium">{workExperiences[0].jobTitle}</p>}</div>
 </div> <div className="bg-gray-50 border-b border-gray-200 px-8 py-3 flex flex-wrap gap-4 text-sm text-gray-700"> <span className="font-bold text-amber-700 border-r border-gray-300 pr-4">Contact</span> {email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{location&&<span>{location}</span>}
         {websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">{websiteLinks.linkedin}</a>}
@@ -2222,8 +2298,8 @@ const AmberTemplate = () =>(
 
 //  TEMPLATE 14: SERIF2 
 const Serif2Template = () =>(
-  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gray-800 text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-gray-900 transition shadow-lg flex items-center justify-center ${isDownloading?'opacity-50 cursor-not-allowed':''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white px-10 py-8"> <div className="border-t-2 border-b-2 border-gray-800 py-4 mb-6 flex items-center gap-6"> {photo?<img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"/>:<div className="w-20 h-20 rounded-full bg-gray-200 border-2 border-gray-300 flex items-center justify-center text-xl font-bold text-gray-600 flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
-        <div className="flex-1 text-center"> <h1 className="text-3xl font-bold text-gray-900 tracking-widest uppercase" style={{fontVariant:'small-caps'}}>{name||'Your Name'}</h1> <p className="text-sm text-gray-500 mt-2">{[email, phone, location ? ` ${location}` : ''].filter(Boolean).join(' • ')}</p> <div className="flex justify-center gap-4 mt-1 text-xs">{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline">{websiteLinks.github}</a>}</div>
+  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white px-10 py-8"> <div className="border-t-2 border-b-2 border-gray-800 py-4 mb-6 flex items-center gap-6"> {photo?<img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"/>:<div className="w-20 h-20 rounded-full bg-gray-200 border-2 border-gray-300 flex items-center justify-center text-xl font-bold text-gray-600 flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
+        <div className="flex-1 text-center"> <h1 className="text-3xl font-bold text-gray-900 tracking-widest uppercase" style={{fontVariant:'small-caps'}}>{name||'Your Name'}</h1> <p className="text-sm text-gray-500 mt-2">{[email, phone, location].filter(Boolean).join(' • ')}</p> <div className="flex justify-center gap-4 mt-1 text-xs">{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline">{websiteLinks.github}</a>}</div>
 </div>
 </div> {summary&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-3 flex items-center gap-2">Professional Summary</h2><p className="text-sm text-gray-700 leading-relaxed">{summary}</p></div>)}
       {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-sm font-bold text-gray-700 text-center tracking-widest uppercase mb-4 flex items-center gap-2">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i}><div className="flex justify-between items-baseline mb-0.5"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}, <span className="text-xs font-normal text-gray-500">{formatDate(exp.startMonth,exp.startYear)} - {formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</span></p></div><p className="font-bold text-gray-700 text-xs mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pl-2"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div>))}</div></div>)}
@@ -2239,7 +2315,7 @@ const Serif2Template = () =>(
 
 //  TEMPLATE 15: HEXAGON 
 const HexagonTemplate = () =>(
-  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-rose-600 hover:to-pink-600 transition shadow-lg flex items-center justify-center ${isDownloading?'opacity-50 cursor-not-allowed':''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white px-10 py-8"> <div className="flex items-center gap-6 mb-5"> <div className="w-16 h-16 bg-rose-400 flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style={{clipPath:'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)'}}>{name?name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase():'YN'}</div> <div><h1 className="text-3xl font-bold text-rose-500">{name||'Your Name'}</h1><div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">{email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{location&&<span>{location}</span>}{location&&<span>{location}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.github}</a>}</div></div>
+  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white px-10 py-8"> <div className="flex items-center gap-6 mb-5"> <div className="w-16 h-16 bg-rose-400 flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style={{clipPath:'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)'}}>{name?name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase():'YN'}</div> <div><h1 className="text-3xl font-bold text-rose-500">{name||'Your Name'}</h1><div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">{email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{location&&<span>{location}</span>}{location&&<span>{location}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">{websiteLinks.github}</a>}</div></div>
 </div> {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-6">{summary}</p>}
       {workExperiences.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Work History</h2><div className="space-y-4">{workExperiences.map((exp,i)=>(<div key={i} className="flex gap-5"><div className="w-24 flex-shrink-0 text-xs text-gray-500 leading-relaxed">{formatDate(exp.startMonth,exp.startYear)} -<br/>{formatDate(exp.endMonth,exp.endYear,exp.isPresent)}</div><div className="flex-1"><p className="font-bold text-gray-900 text-sm">{exp.jobTitle}</p><p className="text-rose-400 text-xs italic mb-1">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-xs text-gray-700 leading-relaxed" />}{exp.achievements&&<div className="mt-1 pt-1 border-t border-rose-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-xs text-gray-700" /></div>}</div></div>))}</div></div>)}
       {skillsList.length>0&&(<div className="mb-6"><h2 className="text-base font-bold text-rose-500 mb-3 border-b border-rose-200 pb-1">Skills</h2><div className="grid grid-cols-3 gap-x-6 gap-y-3">{skillsList.map((sk,i)=>(<div key={i}><p className="text-xs font-medium text-gray-800 mb-1">{sk.name}</p><div className="flex gap-1">{[1,2,3,4,5].map(n=><span key={n} className={`w-3 h-3 rounded-full ${sk.level>=n?'bg-rose-400':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -2254,7 +2330,7 @@ const HexagonTemplate = () =>(
 
 //  TEMPLATE 16: NAVY 
 const NavyTemplate = () =>(
-  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-blue-900 to-indigo-900 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-blue-950 hover:to-indigo-950 transition shadow-lg flex items-center justify-center ${isDownloading?'opacity-50 cursor-not-allowed':''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white px-8 py-8"> <div className="flex items-start gap-6 mb-6"> {photo?<img src={photo} alt="Profile" className="w-24 h-24 object-cover flex-shrink-0 border-2 border-blue-900"/>:<div className="w-24 h-24 bg-blue-100 border-2 border-blue-900 flex items-center justify-center text-2xl font-bold text-blue-900 flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
+  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" className="bg-white px-8 py-8"> <div className="flex items-start gap-6 mb-6"> {photo?<img src={photo} alt="Profile" className="w-24 h-24 object-cover flex-shrink-0 border-2 border-blue-900"/>:<div className="w-24 h-24 bg-blue-100 border-2 border-blue-900 flex items-center justify-center text-2xl font-bold text-blue-900 flex-shrink-0">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
         <div className="flex-1"><h1 className="text-3xl font-bold text-blue-900 mb-2">{name||'Your Name'}</h1><div className="grid grid-cols-2 gap-1 text-xs text-gray-600">{email&&<span>{email}</span>}{phone&&<span>{phone}</span>}{location&&<span>{location}</span>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">{websiteLinks.github}</a>}</div></div>
 </div> {summary&&<p className="text-sm text-gray-700 leading-relaxed mb-6 border-l-4 border-blue-900 pl-3">{summary}</p>}
       {educationList.length>0&&(<div className="mb-6"><h2 className="flex items-center gap-2 text-sm font-bold text-white bg-blue-900 px-3 py-1.5 mb-3 rounded">Education</h2><div className="space-y-3">{educationList.map((edu,i)=>(<div key={i} className="flex gap-5"><div className="w-20 flex-shrink-0 text-xs text-gray-500">{formatDate(edu.endMonth,edu.endYear,edu.isPresent)}</div><div><p className="font-bold text-gray-900 text-sm">{edu.degree}</p><p className="text-blue-800 text-xs italic">{edu.school}</p>{edu.score&&<p className="text-xs text-gray-500">{edu.score}</p>}</div></div>))}</div></div>)}
@@ -2270,7 +2346,7 @@ const NavyTemplate = () =>(
 
 //  TEMPLATE 17: BLUE SIDEBAR 
 const BlueSidebarTemplate = () =>(
-  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-4 px-6 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-cyan-600 transition shadow-lg flex items-center justify-center ${isDownloading?'opacity-50 cursor-not-allowed':''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}> <div style={{float:"left", width:"33%"}} className="bg-blue-500 text-white p-5"> {photo?<img src={photo} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-white mx-auto mb-4 shadow-lg"/>:<div className="w-24 h-24 rounded-full bg-blue-400 border-4 border-white mx-auto mb-4 flex items-center justify-center text-2xl font-bold">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
+  <div className="bg-white shadow-2xl overflow-hidden"> <div className="p-6 pb-4"><button onClick={handleDownloadClick} disabled={isDownloading} className={`w-full bg-[#1a2744] text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-[#152235] transition shadow-lg flex items-center justify-center ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>{isDownloading?'Generating PDF...':'Download PDF'}</button></div> <div id="resume-preview" style={{overflow:"hidden", width:"100%"}}> <div style={{float:"left", width:"33%"}} className="bg-blue-500 text-white p-5"> {photo?<img src={photo} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-white mx-auto mb-4 shadow-lg"/>:<div className="w-24 h-24 rounded-full bg-blue-400 border-4 border-white mx-auto mb-4 flex items-center justify-center text-2xl font-bold">{name?name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase():'YN'}</div>}
         <h1 className="text-lg font-bold text-white text-center mb-5 leading-tight">{name||'Your Name'}</h1> <div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Contact</h3><div className="space-y-1.5 text-xs">{email&&<p className="break-all text-blue-100">{email}</p>}{phone&&<p className="text-blue-100">{phone}</p>}{location&&<p className="text-xs text-blue-100">{location}</p>}{websiteLinks.linkedin&&<a href={websiteLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.linkedin}</a>}{websiteLinks.github&&<a href={websiteLinks.github} target="_blank" rel="noopener noreferrer" className="text-blue-200 hover:underline break-all block">{websiteLinks.github}</a>}</div></div> {skillsList.length>0&&(<div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Skills</h3><div className="space-y-2">{skillsList.map((sk,i)=>(<div key={i}><span className="text-xs text-white font-medium">{sk.name}</span><div className="h-1.5 bg-blue-400 rounded-full mt-0.5"><div className="h-1.5 bg-white rounded-full" style={{width:`${sk.level*20}%`}}></div></div></div>))}</div></div>)}
         {languages.length>0&&(<div className="mb-5"><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Languages</h3><div className="space-y-2">{languages.map((lang,i)=>(<div key={i}><span className="text-xs text-white font-medium">{lang.name}</span><div className="flex gap-0.5 mt-0.5">{[1,2,3,4,5].map(n=><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-white':'bg-blue-400'}`}></span>)}</div></div>))}</div></div>)}
         {hobbies&&(<div><h3 className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2 border-b border-blue-400 pb-1">Interests</h3><div className="flex flex-wrap gap-1">{hobbies.split(',').map((h,i)=>h.trim()&&<span key={i} className="text-xs bg-blue-400 text-white px-2 py-0.5 rounded-full">{h.trim()}</span>)}</div></div>)}
@@ -2285,15 +2361,37 @@ const BlueSidebarTemplate = () =>(
 )
 
   //  RENDER 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100"> {showPaymentModal && <PaymentModal />}
+  // ── Brand button helpers
+  const btnGhost = "px-3 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition"
+  const btnPrimary = "px-4 py-2 bg-[#1a2744] text-white rounded-lg text-sm font-semibold hover:bg-[#152235] transition"
+  const btnDanger = "px-3 py-2 bg-white text-[#8b1a2e] border border-[#8b1a2e] rounded-lg text-sm font-medium hover:bg-[#8b1a2e] hover:text-white transition"
 
-      <header className="bg-white shadow-sm border-b border-gray-200"> <div className="max-w-7xl mx-auto px-8 py-6"> <div className="flex items-center justify-between"> <div> <h1 className="text-3xl font-bold text-gray-900">Resume Builder</h1> <p className="text-sm text-gray-600 mt-1">Create your professional resume</p>
-</div> <div className="flex items-center gap-3"> <span className="text-gray-700">Hi, {displayName}!</span> <button onClick={() =>{ setShowImport(true); setImportMsg(null); setImportPreview(null) }} className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg font-semibold hover:bg-orange-100 transition text-sm border border-orange-200">Import CV</button> <button onClick={() =>setShowTemplateSwitcher(true)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition text-sm border border-indigo-200">Switch Template</button> <button onClick={handleATSCheck} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-100 transition text-sm border border-emerald-200">ATS Check</button> <button onClick={handleJobMatch} className="px-4 py-2 bg-violet-50 text-violet-700 rounded-lg font-semibold hover:bg-violet-100 transition text-sm border border-violet-200">Job Match</button> <button onClick={handleOpenCloudPanel} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-lg font-semibold hover:bg-sky-100 transition text-sm border border-sky-200">Cloud Saves</button> <button onClick={() =>navigate('/cover-letter')} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-semibold hover:bg-blue-100 transition text-sm border border-blue-200">Cover Letter</button> <button onClick={() =>{ setShowTuneUp(true); setTuneUpMsg(null) }} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-lg font-semibold hover:bg-rose-100 transition text-sm border border-rose-200">Tune-Up</button> <button onClick={handleSave} className="px-5 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition text-sm border border-green-200">Save</button> <button onClick={handleClearAll} className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition text-sm border border-red-200">Clear All</button> <button onClick={() =>{ if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition text-sm">Log Out</button>
-</div>
-</div>
-</div>
-</header> <div className="max-w-7xl mx-auto px-8 py-8"> <div className="grid grid-cols-1 lg:grid-cols-2 gap-8"> {/* LEFT: FORM */}
+  return (
+    <div className="min-h-screen bg-gray-50"> {showPaymentModal && <PaymentModal />}
+
+      <header className="bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-[#1a2744] tracking-tight">ResumeAI</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Hi, {displayName}!</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={() =>{ setShowImport(true); setImportMsg(null); setImportPreview(null) }} className={btnGhost}>Import CV</button>
+              <button onClick={() =>setShowTemplateSwitcher(true)} className={btnGhost}>Switch Template</button>
+              <button onClick={handleATSCheck} className={btnGhost}>ATS Check</button>
+              <button onClick={handleJobMatch} className={btnGhost}>Job Match</button>
+              <button onClick={handleOpenCloudPanel} className={btnGhost}>Cloud Saves</button>
+              <button onClick={() =>navigate('/dashboard')} className={btnGhost}>Dashboard</button>
+              <button onClick={() =>navigate('/cover-letter')} className={btnGhost}>Cover Letter</button>
+              <button onClick={() =>{ setShowTuneUp(true); setTuneUpMsg(null) }} className={btnGhost}>Tune-Up</button>
+              <button onClick={handleSave} className={btnPrimary}>Save</button>
+              <button onClick={handleClearAll} className={btnDanger}>Clear</button>
+              <button onClick={() =>{ if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className={btnGhost}>Log Out</button>
+            </div>
+          </div>
+        </div>
+      </header> <div className="max-w-7xl mx-auto px-8 py-8"> <div className="grid grid-cols-1 lg:grid-cols-2 gap-8"> {/* LEFT: FORM */}
           <div className="space-y-6"> {/*  SECTION PROGRESS BAR  */}
             {(() =>{
               const sections = [
@@ -2320,13 +2418,13 @@ const BlueSidebarTemplate = () =>(
                         title={s.done ? `${s.label} ` : `${s.label} — click to fill`}
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition border ${
                           s.done
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100 hover:text-gray-600'
+                            ? 'bg-[#1a2744] text-white border-[#1a2744] hover:bg-[#152235]'
+                            : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50 hover:text-gray-600'
                         }`}
-                      > <span>{s.icon}</span> <span>{s.label}</span> {s.done && <span className="text-emerald-500 font-bold">&#10003;</span>}
+                      > <span>{s.icon}</span> <span>{s.label}</span> {s.done && <span className="font-bold">&#10003;</span>}
 </button> ))}
 </div> <div className="mt-2.5 h-1.5 bg-gray-100 rounded-full overflow-hidden"> <div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-[#1a2744] to-[#2d5a8e] rounded-full transition-all duration-500"
                       style={{width: `${pct}%`}}
                     />
 </div>
@@ -2339,7 +2437,7 @@ const BlueSidebarTemplate = () =>(
 </div> <div> <label className="block text-sm font-semibold mb-2 text-gray-700">Phone</label> <input type="tel" value={phone} onChange={e =>setPhone(e.target.value)} placeholder="+91 98765 43210" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
 </div> <div> <label className="block text-sm font-semibold mb-2 text-gray-700">Location <span className="text-gray-400 font-normal">(optional)</span></label> <input type="text" value={location} onChange={e =>setLocation(e.target.value)} placeholder="e.g. Mumbai, India" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
 </div> {/* Photo Upload - only shown for templates that display it */}
-                {['sidebar', 'greensidebar', 'goldheader', 'classicserif', 'coral'].includes(selectedTemplate) && (
+                {['sidebar', 'greensidebar', 'goldheader', 'classicserif', 'coral', 'serif2', 'navy', 'bluesidebar', 'amber'].includes(selectedTemplate) && (
                 <div> <label className="block text-sm font-semibold mb-2 text-gray-700"> Profile Photo <span className="text-gray-400 font-normal">(optional — shown in this template)</span>
 </label> <div className="flex items-center gap-4"> {photo ? (
                       <div className="relative"> <img src={photo} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-blue-200 shadow-md" /> <button onClick={() =>setPhoto(null)}
@@ -3044,14 +3142,28 @@ const BlueSidebarTemplate = () =>(
                 className="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light"
               >×</button>
 </div> {/* Scrollable grid */}
-            <div className="flex-1 overflow-y-auto p-4"> <div className="grid grid-cols-2 gap-3"> {TEMPLATE_LIST.map(t =>(
+            <div className="flex-1 overflow-y-auto p-4">
+              {!isPro && (
+                <div className="mb-3 px-3 py-2.5 bg-[#1a2744] text-white rounded-xl text-xs flex items-center justify-between gap-2">
+                  <span>5 free templates. Upgrade to Pro for all 17.</span>
+                  <button onClick={() => { setShowTemplateSwitcher(false); setShowUpgrade(true) }} className="px-2.5 py-1 bg-white text-[#1a2744] rounded-lg text-xs font-bold hover:bg-blue-50 transition flex-shrink-0">Upgrade ₹999</button>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3"> {TEMPLATE_LIST.map(t =>{
+                const isProTemplate = !FREE_TEMPLATE_IDS.includes(t.id)
+                const locked = isProTemplate && !isPro
+                return (
                   <button
                     key={t.id}
-                    onClick={() =>{ setSelectedTemplate(t.id); setShowTemplateSwitcher(false) }}
+                    onClick={() => {
+                      if (locked) { setShowTemplateSwitcher(false); setShowUpgrade(true); return }
+                      setSelectedTemplate(t.id); setShowTemplateSwitcher(false)
+                    }}
                     className={`relative rounded-xl overflow-hidden border-2 transition-all group text-left
                       ${selectedTemplate === t.id
-                        ? 'border-indigo-500 ring-2 ring-indigo-300'
-                        : 'border-gray-200 hover:border-indigo-300'}`}
+                        ? 'border-[#1a2744] ring-2 ring-[#2d5a8e]/30'
+                        : locked ? 'border-gray-200 opacity-70 hover:opacity-100'
+                        : 'border-gray-200 hover:border-[#1a2744]'}`}
                   > {/* Thumbnail */}
                     <div className="w-full aspect-[3/4] bg-gray-100 overflow-hidden"> <img
                         src={`/template-previews/${t.id}.jpg`}
@@ -3059,19 +3171,25 @@ const BlueSidebarTemplate = () =>(
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                         onError={e =>{ e.target.style.display = 'none' }}
                       />
+                      {locked && (
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="bg-white text-[#1a2744] text-[10px] font-bold px-2 py-1 rounded-full shadow">Pro</div>
+                        </div>
+                      )}
 </div> {/* Name + badge */}
                     <div className="px-2 py-2 bg-white"> <div className="flex items-center gap-1 flex-wrap"> <span className="text-xs font-semibold text-gray-800">{t.name}</span> {t.badge && (
-                          <span className="text-[10px] bg-indigo-50 text-indigo-600 rounded-full px-1.5 py-0.5 font-medium">{t.badge}</span> )}
+                          <span className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-1.5 py-0.5 font-medium">{t.badge}</span> )}
+                      {locked && <span className="text-[10px] bg-[#1a2744] text-white rounded-full px-1.5 py-0.5 font-bold ml-auto">Pro</span>}
 </div>
 </div> {/* Active tick */}
                     {selectedTemplate === t.id && (
-                      <div className="absolute top-2 right-2 bg-indigo-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow"></div> )}
-</button> ))}
+                      <div className="absolute top-2 right-2 bg-[#1a2744] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow">&#10003;</div> )}
+</button>)})}
 </div>
 </div> {/* Footer */}
             <div className="px-5 py-4 border-t border-gray-100 bg-gray-50"> <button
                 onClick={() =>setShowTemplateSwitcher(false)}
-                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition text-sm"
+                className="w-full py-2.5 bg-[#1a2744] text-white rounded-xl font-semibold hover:bg-[#152235] transition text-sm"
               > Done
 </button>
 </div>
@@ -3081,37 +3199,32 @@ const BlueSidebarTemplate = () =>(
       {/*  WHAT'S NEXT MODAL  */}
       {showWhatsNext && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}> <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"> {/* Header */}
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-6 py-5 text-white relative"> <button onClick={() =>setShowWhatsNext(false)} className="absolute top-4 right-4 text-white/70 hover:text-white text-xl font-bold"></button> <div className="text-3xl mb-2"></div> <h2 className="text-xl font-bold">Your CV is ready!</h2> <p className="text-emerald-100 text-sm mt-1">Here are a few things you can do next</p>
+            <div className="bg-[#1a2744] px-6 py-5 text-white relative"> <button onClick={() =>setShowWhatsNext(false)} className="absolute top-4 right-4 text-white/60 hover:text-white text-xl font-bold">×</button> <h2 className="text-xl font-bold">Your CV is ready!</h2> <p className="text-blue-200 text-sm mt-1">Here's what you can do next</p>
 </div> {/* Cards */}
-            <div className="p-5 space-y-3"> {[
+            <div className="p-5 space-y-2"> {[
                 {
-                  icon: '', color: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
-                  title: 'Write a cover letter',
-                  desc: 'Generate a matching cover letter in seconds using your CV data',
+                  label: 'Write a cover letter',
+                  desc: 'Generate a matching cover letter from your CV data',
                   action: () =>{ setShowWhatsNext(false); navigate('/cover-letter') }
                 },
                 {
-                  icon: '', color: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
-                  title: 'Check your ATS score',
-                  desc: 'See how well your CV will pass automated screening filters',
+                  label: 'Check your ATS score',
+                  desc: 'See how well your CV will pass automated screening',
                   action: () =>{ setShowWhatsNext(false); handleATSCheck() }
                 },
                 {
-                  icon: '', color: 'bg-violet-50 border-violet-200 hover:bg-violet-100',
-                  title: 'Match to a job description',
-                  desc: 'Paste a job posting and see which keywords you\'re missing',
+                  label: 'Match to a job description',
+                  desc: "Paste a job posting and see which keywords you're missing",
                   action: () =>{ setShowWhatsNext(false); setShowJobMatch(true) }
                 },
                 {
-                  icon: '', color: 'bg-rose-50 border-rose-200 hover:bg-rose-100',
-                  title: 'Get an expert CV review',
-                  desc: 'A hiring specialist reviews your CV within 24 hours — ₹499',
+                  label: 'Get an expert CV review — ₹499',
+                  desc: 'A hiring specialist reviews your CV within 24 hours',
                   action: () =>{ setShowWhatsNext(false); setShowTuneUp(true); setTuneUpMsg(null) }
                 },
                 {
-                  icon: '', color: 'bg-sky-50 border-sky-200 hover:bg-sky-100',
-                  title: 'Find matching jobs',
-                  desc: 'Search for roles that match your experience on Naukri & LinkedIn',
+                  label: 'Find matching jobs',
+                  desc: 'Search for roles on Naukri & LinkedIn',
                   action: () =>{
                     const query = encodeURIComponent((workExperiences[0]?.jobTitle || name || 'jobs') + ' jobs India')
                     window.open(`https://www.naukri.com/jobs-by-keyword?q=${query}`, '_blank')
@@ -3119,8 +3232,8 @@ const BlueSidebarTemplate = () =>(
                   }
                 },
               ].map(card =>(
-                <button key={card.title} onClick={card.action}
-                  className={`w-full flex items-start gap-4 p-4 rounded-xl border text-left transition ${card.color}`}> <span className="text-2xl flex-shrink-0">{card.icon}</span> <div> <p className="text-sm font-bold text-gray-800">{card.title}</p> <p className="text-xs text-gray-500 mt-0.5">{card.desc}</p>
+                <button key={card.label} onClick={card.action}
+                  className="w-full flex items-start gap-3 p-3.5 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 text-left transition shadow-sm"> <div className="w-2 h-2 rounded-full bg-[#1a2744] mt-1.5 flex-shrink-0" /> <div> <p className="text-sm font-semibold text-gray-800">{card.label}</p> <p className="text-xs text-gray-500 mt-0.5">{card.desc}</p>
 </div>
 </button> ))}
 </div> <div className="px-5 pb-5"> <button onClick={() =>setShowWhatsNext(false)}
@@ -3133,7 +3246,7 @@ const BlueSidebarTemplate = () =>(
       {/*  RESUME TUNE-UP MODAL  */}
       {showTuneUp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}> <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"> {/* Header */}
-            <div className="bg-gradient-to-br from-rose-500 to-pink-600 px-6 py-5 text-white relative"> <button onClick={() =>setShowTuneUp(false)} className="absolute top-4 right-4 text-white/70 hover:text-white text-xl font-bold"></button> <div className="text-3xl mb-2"></div> <h2 className="text-xl font-bold">Expert CV Tune-Up</h2> <p className="text-rose-100 text-sm mt-1">Get your resume reviewed by a hiring specialist</p>
+            <div className="bg-[#8b1a2e] px-6 py-5 text-white relative"> <button onClick={() =>setShowTuneUp(false)} className="absolute top-4 right-4 text-white/60 hover:text-white text-xl font-bold">×</button> <h2 className="text-xl font-bold">Expert CV Tune-Up</h2> <p className="text-red-200 text-sm mt-1">Get your resume reviewed by a hiring specialist</p>
 </div> {/* Body */}
             <div className="px-6 py-5"> {tuneUpMsg ? (
                 <div className={`rounded-xl p-4 ${tuneUpMsg.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}> <p className={`text-sm font-semibold mb-1 ${tuneUpMsg.type === 'success' ? 'text-green-700' : 'text-red-700'}`}> {tuneUpMsg.type === 'success' ? ' You\'re all set!' : ' Something went wrong'}
@@ -3156,7 +3269,7 @@ const BlueSidebarTemplate = () =>(
 </div> <button
                     onClick={handleTuneUpPayment}
                     disabled={tuneUpLoading}
-                    className={`w-full py-3.5 rounded-xl font-bold text-white transition text-sm flex items-center justify-center gap-2 ${tuneUpLoading ? 'bg-rose-300 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600'}`}
+                    className={`w-full py-3.5 rounded-xl font-bold text-white transition text-sm flex items-center justify-center gap-2 ${tuneUpLoading ? 'bg-[#c96b80] cursor-not-allowed' : 'bg-[#8b1a2e] hover:bg-[#7a1727]'}`}
                   > {tuneUpLoading ? (
                       <><span className="animate-spin">⏳</span>Opening payment…</> ) : (
                       <>Pay ₹499 &amp; Get My CV Reviewed</> )}
@@ -3165,6 +3278,63 @@ const BlueSidebarTemplate = () =>(
 </div>
 </div>
 </div> )}
+
+      {/*  PRO UPGRADE MODAL  */}
+      {showUpgrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.65)'}} onClick={() => setShowUpgrade(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-[#1a2744] px-6 py-5 text-white relative">
+              <button onClick={() => setShowUpgrade(false)} className="absolute top-4 right-4 text-white/60 hover:text-white text-xl font-bold">×</button>
+              <h2 className="text-xl font-bold">Upgrade to Pro</h2>
+              <p className="text-blue-200 text-sm mt-1">Unlock all templates and premium features</p>
+            </div>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {upgradeMsg && (
+                <div className={`rounded-xl px-4 py-3 text-sm ${upgradeMsg.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
+                  {upgradeMsg.text}
+                </div>
+              )}
+              <ul className="space-y-2.5">
+                {[
+                  'All 17 premium templates',
+                  'Unlimited PDF downloads',
+                  'ATS score checker',
+                  'Job description matcher',
+                  'Cover Letter Builder',
+                  'Cloud saves (unlimited)',
+                  'Lifetime access — no subscription',
+                ].map(item => (
+                  <li key={item} className="flex items-center gap-3 text-sm text-gray-700">
+                    <span className="w-4 h-4 rounded-full bg-[#1a2744] text-white text-[10px] flex items-center justify-center flex-shrink-0 font-bold">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-100">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">One-time payment</p>
+                  <p className="text-3xl font-bold text-[#1a2744]">₹999</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Lifetime access</p>
+                </div>
+                <div className="text-right text-xs text-gray-400">
+                  <p>Secure payment</p>
+                  <p>via Razorpay</p>
+                </div>
+              </div>
+              <button
+                onClick={handleProUpgrade}
+                disabled={upgradeLoading}
+                className={`w-full py-3.5 rounded-xl font-bold text-white transition text-sm ${upgradeLoading ? 'bg-[#c0cad8] cursor-not-allowed' : 'bg-[#1a2744] hover:bg-[#152235]'}`}
+              >
+                {upgradeLoading ? 'Opening payment…' : 'Upgrade Now — ₹999'}
+              </button>
+              <p className="text-center text-xs text-gray-400">Secure checkout via Razorpay · No subscription</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {overlapWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}}> <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"> <div className="flex items-start gap-3 mb-4"> <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-lg"></div> <div> <h3 className="font-bold text-gray-900 text-lg">Date Overlap Detected</h3> <p className="text-sm text-gray-600 mt-1"> This role overlaps with <span className="font-semibold text-gray-900">{overlapWarning.overlapping.jobTitle}</span>at <span className="font-semibold text-gray-900">{overlapWarning.overlapping.company}</span>.
