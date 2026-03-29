@@ -2,183 +2,107 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react'
 
-const TEMPLATES_PREVIEW = [
-  { id: 'modern',       name: 'Modern',        badge: 'Popular' },
-  { id: 'professional', name: 'Professional',  badge: 'ATS Friendly' },
-  { id: 'minimal',      name: 'Minimal',       badge: '' },
-  { id: 'classic',      name: 'Classic',       badge: '' },
-  { id: 'sidebar',      name: 'Sidebar',       badge: 'Photo' },
-  { id: 'tech',         name: 'Tech',          badge: 'For Devs' },
-  { id: 'elegant',      name: 'Elegant',       badge: '' },
-  { id: 'navy',         name: 'Navy Icons',    badge: 'Photo' },
-  { id: 'coral',        name: 'Coral',         badge: 'Photo' },
+/* ── Template data ─────────────────────────────────────────────── */
+const ALL_TEMPLATES = [
+  { id: 'modern',       name: 'Modern',        category: 'popular',      badge: 'Popular' },
+  { id: 'professional', name: 'Professional',  category: 'professional', badge: 'ATS Friendly' },
+  { id: 'minimal',      name: 'Minimal',       category: 'minimal',      badge: '' },
+  { id: 'classic',      name: 'Classic',       category: 'professional', badge: '' },
+  { id: 'sidebar',      name: 'Sidebar',       category: 'creative',     badge: 'Photo' },
+  { id: 'tech',         name: 'Tech',          category: 'creative',     badge: 'For Devs' },
+  { id: 'elegant',      name: 'Elegant',       category: 'minimal',      badge: '' },
+  { id: 'navy',         name: 'Navy Icons',    category: 'professional', badge: 'Photo' },
+  { id: 'coral',        name: 'Coral',         category: 'creative',     badge: 'Photo' },
+  { id: 'goldheader',   name: 'Gold Header',   category: 'popular',      badge: 'Photo' },
+  { id: 'bluesidebar',  name: 'Blue Sidebar',  category: 'creative',     badge: 'Photo' },
+  { id: 'amber',        name: 'Amber',         category: 'popular',      badge: 'Photo' },
 ]
 
-const FEATURES = [
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-      </svg>
-    ),
-    title: 'Build in Minutes',
-    desc: 'Step-by-step form with live preview. Fill your details, see your CV update in real time.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-      </svg>
-    ),
-    title: '17 Professional Templates',
-    desc: 'From minimal to creative, classic to modern — there\'s a template for every role and industry.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-      </svg>
-    ),
-    title: 'Download as PDF',
-    desc: 'One click to export a crisp, ATS-friendly PDF ready to attach to any job application.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-    ),
-    title: 'Import Existing CV',
-    desc: 'Upload a PDF or Word doc — we extract your details and pre-fill the form automatically.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
-      </svg>
-    ),
-    title: 'AI Cover Letter',
-    desc: 'Generate a personalised cover letter from your CV data in seconds. Edit and download instantly.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-      </svg>
-    ),
-    title: 'ATS Optimised',
-    desc: 'Built-in ATS checker and job match score help your CV pass automated screening filters.',
-  },
-]
+const FILTER_TABS = ['All', 'Popular', 'Professional', 'Creative', 'Minimal']
 
-const FAQS = [
-  {
-    q: 'Is ResumeAI completely free?',
-    a: 'Yes — building, editing, and downloading your resume is 100% free. We offer optional Pro features (more templates, expert tune-up) at a one-time fee, with no recurring subscription.',
-  },
-  {
-    q: 'Can I upload my existing CV and edit it?',
-    a: 'Absolutely. Use the "Import CV" button to upload a PDF or Word document. We extract your details and populate the form — you can then edit everything and choose a new template.',
-  },
-  {
-    q: 'Will my resume pass ATS (Applicant Tracking Systems)?',
-    a: 'Our Professional and Modern templates are optimised for ATS. We also include a built-in ATS checker that scans your CV for common issues before you submit.',
-  },
-  {
-    q: 'Can I create a cover letter too?',
-    a: 'Yes! Once your CV is built, switch to the Cover Letter tab. We generate a personalised letter from your CV data — adjust the tone, company, and target role, then download.',
-  },
-  {
-    q: 'Is my data private and secure?',
-    a: 'Your data is stored securely with Supabase. We never share your personal information. You can delete your saved resumes at any time from the dashboard.',
-  },
-  {
-    q: 'How many resumes can I save?',
-    a: 'Free users can save multiple resume versions to the cloud. Each version preserves all your data so you can tailor different CVs for different roles.',
-  },
-]
-
+/* ── Steps ─────────────────────────────────────────────────────── */
 const STEPS = [
-  { num: '01', title: 'Choose a template', desc: 'Pick from 17 professionally designed layouts.' },
-  { num: '02', title: 'Fill in your details', desc: 'Add your experience, education, and skills.' },
-  { num: '03', title: 'Customise & preview', desc: 'See your resume update live as you type.' },
-  { num: '04', title: 'Download your PDF', desc: 'One click to get a job-ready PDF.' },
+  { n: '1', title: 'Pick a template', body: 'Choose from 17 professionally crafted designs. Click any template to preview it in full.' },
+  { n: '2', title: 'Fill in your details', body: 'Add your experience, education, and skills. AI suggestions help you write better bullet points.' },
+  { n: '3', title: 'Preview in real time', body: 'Watch your resume update live as you type. Switch templates instantly — your data stays intact.' },
+  { n: '4', title: 'Download your PDF', body: 'One click. Clean, crisp, ATS-ready PDF delivered instantly, completely free.' },
 ]
 
-function ChevronIcon({ open }) {
-  return (
-    <svg
-      width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      className={`transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`}
-    >
-      <path d="M6 9l6 6 6-6"/>
-    </svg>
-  )
-}
+/* ── Features ───────────────────────────────────────────────────── */
+const FEATURES = [
+  { icon: '🎨', title: '17 Professional Templates', body: 'From minimal and modern to creative and corporate — find the perfect look for your industry.' },
+  { icon: '⚡', title: 'Live Preview', body: 'See every change reflected in your resume in real time. No surprises when you download.' },
+  { icon: '🤖', title: 'AI Content Suggestions', body: 'Struggling with bullet points? Our AI generates role-specific suggestions you can one-click add.' },
+  { icon: '📄', title: 'Import Existing CV', body: 'Upload your old PDF or Word doc — we extract your data and pre-fill the form automatically.' },
+  { icon: '✅', title: 'ATS Checker Built In', body: 'Scan your resume against ATS requirements before you submit. Get your score and fix gaps.' },
+  { icon: '☁️', title: 'Cloud Save & Sync', body: 'Save multiple resume versions to the cloud. Tailor different CVs for different roles.' },
+  { icon: '✉️', title: 'Cover Letter Generator', body: 'Generate a personalised cover letter from your resume data in seconds.' },
+  { icon: '🎯', title: 'Job Match Score', body: 'Paste a job description and see how well your resume matches — with keyword suggestions.' },
+]
 
+/* ── FAQs ───────────────────────────────────────────────────────── */
+const FAQS = [
+  { q: 'Is ResumeAI completely free?', a: 'Yes — building, editing, and downloading your resume is 100% free. We offer optional Pro features (more templates, expert CV tune-up) at a one-time fee with no subscription.' },
+  { q: 'Can I upload my existing CV to edit it?', a: 'Absolutely. Click "Import Existing CV" to upload a PDF or Word document. We extract your information and populate the form — then you pick a new template and download.' },
+  { q: 'Will my resume pass ATS filters?', a: 'Our Professional and Modern templates are ATS-optimised. We also include a built-in ATS checker that scans your resume for common issues — keyword gaps, formatting problems — before you apply.' },
+  { q: 'Can I create a cover letter too?', a: 'Yes! Once your resume is built, switch to Cover Letter. We generate a personalised letter from your resume data — adjust the tone, company, and role, then download.' },
+  { q: 'How many resumes can I save?', a: 'Free users can save multiple versions to the cloud. Each preserves all your data so you can maintain different CVs for different types of roles.' },
+  { q: 'Is my data private?', a: 'Your data is stored securely and never shared. You can delete saved resumes any time from the dashboard.' },
+]
+
+/* ── Component ──────────────────────────────────────────────────── */
 export default function Home() {
   const { user } = useUser()
   const isSignedIn = !!user
   const [openFaq, setOpenFaq] = useState(null)
+  const [activeFilter, setActiveFilter] = useState('All')
+  const [heroTemplate, setHeroTemplate] = useState('modern')
 
-  const ctaHref = isSignedIn ? '/templates' : '/signup'
+  const ctaLink = isSignedIn ? '/templates' : '/signup'
+
+  const filteredTemplates = activeFilter === 'All'
+    ? ALL_TEMPLATES
+    : ALL_TEMPLATES.filter(t => t.category === activeFilter.toLowerCase())
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      {/* ── NAV ── */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#1a2744] flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-[#1a2744] flex items-center justify-center shadow-sm group-hover:bg-[#152235] transition">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
               </svg>
             </div>
-            <span className="text-xl font-bold text-[#1a2744] tracking-tight">ResumeAI</span>
+            <span className="text-[1.2rem] font-bold text-[#1a2744] tracking-tight">ResumeAI</span>
           </Link>
 
-          {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-gray-600">
-            <a href="#templates" className="hover:text-[#1a2744] transition">Templates</a>
-            <a href="#how-it-works" className="hover:text-[#1a2744] transition">How it works</a>
-            <Link to="/resume-tips" className="hover:text-[#1a2744] transition">Resume Tips</Link>
-            <Link to="/cover-letter-tips" className="hover:text-[#1a2744] transition">Cover Letter</Link>
-            <a href="#faq" className="hover:text-[#1a2744] transition">FAQ</a>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+            <a href="#templates" className="hover:text-[#1a2744] transition-colors">Templates</a>
+            <a href="#how-it-works" className="hover:text-[#1a2744] transition-colors">How it works</a>
+            <Link to="/resume-tips" className="hover:text-[#1a2744] transition-colors">Resume Tips</Link>
+            <Link to="/cover-letter-tips" className="hover:text-[#1a2744] transition-colors">Cover Letter</Link>
+            <a href="#faq" className="hover:text-[#1a2744] transition-colors">FAQ</a>
           </nav>
 
-          {/* Auth */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {isSignedIn ? (
               <>
-                <Link
-                  to="/dashboard"
-                  className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-[#1a2744] transition"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/templates"
-                  className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition"
-                >
+                <Link to="/dashboard" className="hidden sm:block px-4 py-2 text-sm font-semibold text-gray-600 hover:text-[#1a2744] transition">Dashboard</Link>
+                <Link to="/templates" className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition shadow-sm">
                   + New Resume
                 </Link>
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-[#1a2744] transition"
-                >
-                  Log In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition"
-                >
-                  Get Started — Free
+                <Link to="/login" className="hidden sm:block px-4 py-2 text-sm font-semibold text-gray-600 hover:text-[#1a2744] transition">Log In</Link>
+                <Link to="/signup" className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition shadow-sm">
+                  Get Started Free
                 </Link>
               </>
             )}
@@ -186,271 +110,380 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-b from-slate-50 to-white pt-20 pb-24 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-[#1a2744]/8 text-[#1a2744] text-xs font-semibold px-4 py-1.5 rounded-full mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#1a2744] animate-pulse inline-block"></span>
-            17 professional templates · AI-powered · 100% free
+      {/* ── HERO — split layout ── */}
+      <section className="bg-gradient-to-br from-[#0f1c38] via-[#1a2744] to-[#1e3260] text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+          {/* Left copy */}
+          <div>
+            <div className="inline-flex items-center gap-2 bg-white/10 text-blue-200 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 border border-white/10">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block"></span>
+              Free · No credit card · Download instantly
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl xl:text-[3.4rem] font-extrabold leading-[1.1] tracking-tight mb-5">
+              Build a Resume That<br />
+              <span className="text-[#f0a04b]">Gets You Hired</span>
+            </h1>
+
+            <p className="text-lg text-blue-100 leading-relaxed mb-8 max-w-lg">
+              Create a professional, ATS-ready resume in minutes.
+              17 beautiful templates, live preview, AI content help — all free.
+            </p>
+
+            {/* Social proof row */}
+            <div className="flex items-center gap-6 mb-8">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">17</p>
+                <p className="text-xs text-blue-300">Templates</p>
+              </div>
+              <div className="w-px h-8 bg-white/20" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">100%</p>
+                <p className="text-xs text-blue-300">Free</p>
+              </div>
+              <div className="w-px h-8 bg-white/20" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">ATS</p>
+                <p className="text-xs text-blue-300">Optimised</p>
+              </div>
+              <div className="w-px h-8 bg-white/20" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">PDF</p>
+                <p className="text-xs text-blue-300">Instant</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to={ctaLink}
+                className="px-7 py-3.5 bg-[#f0a04b] text-[#1a2744] font-bold rounded-xl hover:bg-[#e8943a] transition text-sm shadow-lg shadow-[#f0a04b]/30"
+              >
+                Build My Resume — Free →
+              </Link>
+              <Link
+                to={ctaLink}
+                className="px-7 py-3.5 bg-white/10 text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition text-sm"
+              >
+                Import Existing CV
+              </Link>
+            </div>
+
+            <p className="text-xs text-blue-400 mt-4">No sign-up tricks. No hidden fees. No watermark on your PDF.</p>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-extrabold text-[#1a2744] leading-[1.1] tracking-tight mb-6">
-            Build a Resume That<br />
-            <span className="text-[#8b1a2e]">Gets You Hired</span>
-          </h1>
+          {/* Right: template switcher + live preview */}
+          <div className="relative flex flex-col items-center">
+            {/* Mini template picker */}
+            <div className="flex gap-2 mb-4 flex-wrap justify-center">
+              {['modern', 'minimal', 'professional', 'sidebar', 'tech'].map(tid => (
+                <button
+                  key={tid}
+                  onClick={() => setHeroTemplate(tid)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border capitalize ${
+                    heroTemplate === tid
+                      ? 'bg-white text-[#1a2744] border-white shadow'
+                      : 'bg-white/10 text-blue-200 border-white/20 hover:bg-white/20'
+                  }`}
+                >
+                  {tid}
+                </button>
+              ))}
+            </div>
 
-          <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Create a job-ready resume in minutes. Choose from 17 beautiful templates,
-            fill in your details, and download a PDF — all for free.
-          </p>
+            {/* CV thumbnail */}
+            <div className="relative w-full max-w-[340px] group">
+              <div className="absolute -inset-3 bg-gradient-to-r from-[#f0a04b]/30 to-blue-500/20 rounded-3xl blur-xl opacity-60" />
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-white/20">
+                <img
+                  src={`/template-previews/${heroTemplate}.jpg`}
+                  alt={`${heroTemplate} resume template`}
+                  className="w-full object-cover object-top transition-all duration-500"
+                  style={{ maxHeight: '420px' }}
+                />
+                <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-[#1a2744]/80 to-transparent flex items-end justify-center pb-4">
+                  <Link
+                    to={ctaLink}
+                    className="px-5 py-2 bg-white text-[#1a2744] text-xs font-bold rounded-full shadow-lg hover:scale-105 transition"
+                  >
+                    Use This Template →
+                  </Link>
+                </div>
+              </div>
+              {/* Floating badge */}
+              <div className="absolute -top-3 -right-3 bg-green-400 text-green-900 text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                Free Download
+              </div>
+            </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to={ctaHref}
-              className="px-8 py-4 bg-[#1a2744] text-white text-base font-bold rounded-xl hover:bg-[#152235] transition shadow-lg shadow-[#1a2744]/20"
-            >
-              Build My Resume — Free →
-            </Link>
-            <Link
-              to={`${ctaHref}?import=true`}
-              className="px-8 py-4 bg-white text-[#1a2744] text-base font-bold rounded-xl border-2 border-[#1a2744]/20 hover:border-[#1a2744]/40 hover:bg-slate-50 transition"
-            >
-              Import Existing CV
-            </Link>
+            <p className="text-blue-300 text-xs mt-3">Click a style above to preview · {ALL_TEMPLATES.length} templates total</p>
           </div>
-
-          <p className="text-xs text-gray-400 mt-5">
-            No credit card required · Takes less than 5 minutes · Trusted by thousands of job seekers
-          </p>
         </div>
+      </section>
 
-        {/* Template thumbnail strip */}
-        <div className="max-w-6xl mx-auto mt-16 overflow-hidden">
-          <div className="flex gap-4 justify-center flex-wrap">
-            {TEMPLATES_PREVIEW.slice(0, 6).map(t => (
+      {/* ── TRUST BAR ── */}
+      <div className="bg-gray-50 border-b border-gray-100 py-4 px-6">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-10 gap-y-2 text-xs font-medium text-gray-500">
+          {['🇮🇳 Built for India\'s job market', '🔒 Your data is private', '⚡ PDF in one click', '✅ ATS-friendly templates', '🤖 AI-powered suggestions', '☁️ Free cloud saves'].map(t => (
+            <span key={t}>{t}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── TEMPLATES SECTION ── */}
+      <section id="templates" className="py-20 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-4xl font-extrabold text-[#1a2744] mb-3">Choose Your Template</h2>
+            <p className="text-gray-500 text-lg">17 professionally designed templates — click any to preview in full</p>
+          </div>
+
+          {/* Filter tabs */}
+          <div className="flex gap-2 justify-center flex-wrap mb-8">
+            {FILTER_TABS.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveFilter(tab)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition border ${
+                  activeFilter === tab
+                    ? 'bg-[#1a2744] text-white border-[#1a2744] shadow-md'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#1a2744] hover:text-[#1a2744]'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Template grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {filteredTemplates.map(t => (
               <Link
                 key={t.id}
-                to={ctaHref}
-                className="relative group flex-shrink-0 w-36 bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-100 overflow-hidden transition-all hover:-translate-y-1"
+                to={ctaLink}
+                className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="h-48 bg-gray-50 overflow-hidden">
+                <div className="relative overflow-hidden" style={{ height: '200px', background: '#f8f9fa' }}>
                   <img
                     src={`/template-previews/${t.id}.jpg`}
                     alt={t.name}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                   />
-                </div>
-                <div className="px-3 py-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700">{t.name}</span>
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-[#1a2744]/0 group-hover:bg-[#1a2744]/50 transition-all duration-300 flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white text-[#1a2744] text-xs font-bold px-4 py-2 rounded-full shadow-lg">
+                      Use Template
+                    </span>
+                  </div>
                   {t.badge && (
-                    <span className="text-[10px] bg-[#1a2744]/10 text-[#1a2744] px-1.5 py-0.5 rounded font-medium">{t.badge}</span>
+                    <div className="absolute top-2 left-2">
+                      <span className="bg-[#1a2744] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                        {t.badge}
+                      </span>
+                    </div>
                   )}
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="text-xs font-bold text-gray-800">{t.name}</p>
                 </div>
               </Link>
             ))}
+
+            {/* View all card */}
+            <Link
+              to="/templates"
+              className="group bg-gradient-to-br from-[#1a2744] to-[#2d4a8a] rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-2 transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
+              style={{ minHeight: '240px' }}
+            >
+              <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center text-white text-2xl font-bold group-hover:border-white/60 transition">+</div>
+              <p className="text-white text-sm font-bold">View All 17</p>
+              <p className="text-blue-300 text-xs">Templates</p>
+            </Link>
           </div>
-          <div className="text-center mt-6">
-            <Link to="/templates" className="text-sm font-semibold text-[#1a2744] hover:underline">
-              View all 17 templates →
+
+          <div className="text-center mt-8">
+            <Link
+              to="/templates"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1a2744] text-white font-semibold rounded-xl hover:bg-[#152235] transition text-sm"
+            >
+              Browse All Templates →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── TRUST STRIP ─────────────────────────────────────────────────── */}
-      <section className="border-y border-gray-100 bg-gray-50 py-6 px-6">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-12 gap-y-4 text-sm text-gray-500">
-          {[
-            { icon: '🇮🇳', text: 'Built for the Indian job market' },
-            { icon: '🔒', text: 'Your data stays private' },
-            { icon: '⚡', text: 'Instant PDF download' },
-            { icon: '🤖', text: 'ATS-friendly templates' },
-            { icon: '✨', text: 'AI-generated content suggestions' },
-          ].map(item => (
-            <div key={item.text} className="flex items-center gap-2">
-              <span>{item.icon}</span>
-              <span className="font-medium text-gray-600">{item.text}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-24 px-6">
+      {/* ── HOW IT WORKS ── */}
+      <section id="how-it-works" className="py-20 px-6 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-4xl font-bold text-[#1a2744] mb-3">How it works</h2>
-            <p className="text-gray-500 text-lg">Get your resume done in four simple steps</p>
+            <h2 className="text-4xl font-extrabold text-[#1a2744] mb-3">Build your resume in 4 steps</h2>
+            <p className="text-gray-500 text-lg">Takes less than 5 minutes. Seriously.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {STEPS.map((step, i) => (
-              <div key={step.num} className="relative text-center">
-                {i < STEPS.length - 1 && (
-                  <div className="hidden lg:block absolute top-7 left-[60%] w-full h-0.5 bg-gradient-to-r from-[#1a2744]/20 to-transparent z-0" />
-                )}
-                <div className="w-14 h-14 rounded-2xl bg-[#1a2744] text-white flex items-center justify-center text-xl font-bold mx-auto mb-4 relative z-10">
-                  {step.num}
+              <div
+                key={step.n}
+                className="relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#1a2744] text-white flex items-center justify-center text-lg font-extrabold mb-4 group-hover:bg-[#8b1a2e] transition">
+                  {step.n}
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+                <h3 className="font-bold text-gray-900 mb-2 text-base">{step.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{step.body}</p>
+                {i < STEPS.length - 1 && (
+                  <div className="hidden lg:block absolute top-8 -right-4 text-gray-300 text-xl z-10">→</div>
+                )}
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Link
-              to={ctaHref}
-              className="inline-block px-8 py-3.5 bg-[#1a2744] text-white font-bold rounded-xl hover:bg-[#152235] transition text-sm"
-            >
+          <div className="text-center mt-10">
+            <Link to={ctaLink} className="inline-block px-8 py-3.5 bg-[#1a2744] text-white font-bold rounded-xl hover:bg-[#152235] transition text-sm shadow-md">
               Start Building Now →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── TEMPLATES ───────────────────────────────────────────────────── */}
-      <section id="templates" className="bg-gradient-to-b from-slate-50 to-white py-24 px-6">
+      {/* ── FEATURES GRID ── */}
+      <section className="py-20 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-4xl font-bold text-[#1a2744] mb-3">17 Professional Templates</h2>
-            <p className="text-gray-500 text-lg">Pick the perfect design for your industry and style</p>
+            <h2 className="text-4xl font-extrabold text-[#1a2744] mb-3">Everything you need to land the job</h2>
+            <p className="text-gray-500 text-lg">All the tools in one place — free forever</p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {TEMPLATES_PREVIEW.map(t => (
-              <Link
-                key={t.id}
-                to={ctaHref}
-                className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg overflow-hidden transition-all hover:-translate-y-0.5"
-              >
-                <div className="relative h-52 bg-gray-50 overflow-hidden">
-                  <img
-                    src={`/template-previews/${t.id}.jpg`}
-                    alt={`${t.name} resume template`}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-400"
-                  />
-                  <div className="absolute inset-0 bg-[#1a2744]/0 group-hover:bg-[#1a2744]/30 transition-all duration-200 flex items-center justify-center">
-                    <span className="opacity-0 group-hover:opacity-100 transition bg-white text-[#1a2744] text-xs font-bold px-4 py-2 rounded-full shadow">
-                      Use Template
-                    </span>
-                  </div>
-                </div>
-                <div className="px-3 py-2.5 flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-800">{t.name}</span>
-                  {t.badge && (
-                    <span className="text-[10px] bg-[#1a2744]/10 text-[#1a2744] px-1.5 py-0.5 rounded font-semibold">{t.badge}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
-
-            {/* View All card */}
-            <Link
-              to="/templates"
-              className="group bg-[#1a2744] rounded-xl border border-[#1a2744] overflow-hidden transition-all hover:bg-[#152235] flex flex-col items-center justify-center h-[13.5rem] gap-3"
-            >
-              <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center text-white text-2xl font-bold">+</div>
-              <p className="text-white text-sm font-bold">View All 17</p>
-              <p className="text-white/60 text-xs">Templates</p>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-4xl font-bold text-[#1a2744] mb-3">Everything you need to land the job</h2>
-            <p className="text-gray-500 text-lg">All the tools in one place, completely free</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {FEATURES.map(f => (
               <div
                 key={f.title}
-                className="p-6 rounded-2xl border border-gray-100 bg-white hover:shadow-md transition group"
+                className="p-5 rounded-2xl bg-white border border-gray-100 hover:shadow-md hover:border-[#1a2744]/20 transition group cursor-default"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#1a2744]/8 text-[#1a2744] flex items-center justify-center mb-4 group-hover:bg-[#1a2744] group-hover:text-white transition">
-                  {f.icon}
-                </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                <div className="text-3xl mb-3">{f.icon}</div>
+                <h3 className="font-bold text-gray-900 text-sm mb-2">{f.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{f.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── RESOURCE LINKS ──────────────────────────────────────────────── */}
-      <section className="py-16 px-6 bg-slate-50 border-y border-gray-100">
+      {/* ── SPLIT PROMO — Import CV ── */}
+      <section className="py-20 px-6 bg-[#1a2744] overflow-hidden">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="text-[#f0a04b] text-sm font-bold uppercase tracking-widest mb-3">Already have a CV?</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
+              Import it. Upgrade it.<br />Download it.
+            </h2>
+            <p className="text-blue-200 text-base leading-relaxed mb-6">
+              Upload your existing PDF or Word resume — we'll extract your details instantly and populate the form. Then pick a stunning new template and download a fresh version.
+            </p>
+            <ul className="space-y-3 mb-8">
+              {['Supports PDF, Word (.docx), and plain text', 'Auto-extracts name, email, experience, education', 'Keep what is good, fix what is not', 'Switch to any of our 17 templates instantly'].map(item => (
+                <li key={item} className="flex items-start gap-3 text-sm text-blue-100">
+                  <span className="w-5 h-5 rounded-full bg-[#f0a04b] text-[#1a2744] font-bold flex items-center justify-center text-xs flex-shrink-0 mt-0.5">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Link
+              to={ctaLink}
+              className="inline-block px-7 py-3.5 bg-[#f0a04b] text-[#1a2744] font-bold rounded-xl hover:bg-[#e8943a] transition text-sm shadow-lg"
+            >
+              Import My CV →
+            </Link>
+          </div>
+
+          {/* Visual */}
+          <div className="flex justify-center lg:justify-end">
+            <div className="relative w-full max-w-[300px]">
+              <div className="absolute -inset-4 bg-[#f0a04b]/10 rounded-3xl blur-2xl" />
+              <div className="relative bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="bg-white/10 rounded-xl p-3 mb-3 border border-white/10 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#f0a04b]/20 flex items-center justify-center text-xl">📄</div>
+                  <div>
+                    <p className="text-white text-xs font-bold">your_resume.pdf</p>
+                    <p className="text-blue-300 text-[10px]">Uploading...</p>
+                  </div>
+                  <span className="ml-auto text-green-400 text-lg">✓</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 py-2 text-blue-300 text-xs mb-3">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span>extracted</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+                {[['Name', 'Baishali Roy'], ['Email', 'baishali@email.com'], ['Experience', '3 jobs found'], ['Education', '2 entries'], ['Skills', '8 skills']].map(([label, val]) => (
+                  <div key={label} className="flex justify-between py-1.5 border-b border-white/10 last:border-0">
+                    <span className="text-blue-300 text-xs">{label}</span>
+                    <span className="text-white text-xs font-medium">{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── RESOURCE LINKS ── */}
+      <section className="py-20 px-6 bg-slate-50 border-y border-gray-100">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-[#1a2744] mb-2">Resume Resources</h2>
-            <p className="text-gray-500">Guides to help you write a winning job application</p>
+            <h2 className="text-3xl font-extrabold text-[#1a2744] mb-2">Resume Guides & Resources</h2>
+            <p className="text-gray-500 text-base">Everything you need to write a winning job application</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
-              {
-                href: '/resume-tips',
-                icon: '📄',
-                title: 'How to Write a Resume',
-                desc: 'Step-by-step guide to writing a resume that gets callbacks — format, length, and what to include.',
-              },
-              {
-                href: '/cover-letter-tips',
-                icon: '✉️',
-                title: 'Cover Letter Guide',
-                desc: 'How to write a compelling cover letter, what to include, and common mistakes to avoid.',
-              },
-              {
-                href: '/templates',
-                icon: '🎨',
-                title: 'Template Gallery',
-                desc: 'Browse all 17 resume templates and choose the one that best fits your industry and style.',
-              },
-            ].map(card => (
+              { href: '/resume-tips', emoji: '📄', label: 'Resume Guide', title: 'How to Write a Resume That Gets Callbacks', body: 'ATS tips, bullet point formulas, formatting advice — practical and India-specific.' },
+              { href: '/cover-letter-tips', emoji: '✉️', label: 'Cover Letter', title: 'How to Write a Cover Letter That Gets Noticed', body: 'Structure, tone, openers, closers — everything from scratch to final draft.' },
+              { href: '/templates', emoji: '🎨', label: 'Templates', title: 'Browse All 17 Resume Templates', body: 'Minimal, creative, professional, ATS-friendly — there\'s one for every role.' },
+            ].map(c => (
               <Link
-                key={card.href}
-                to={card.href}
-                className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition group"
+                key={c.href}
+                to={c.href}
+                className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:border-[#1a2744]/20 transition group"
               >
-                <div className="text-3xl mb-3">{card.icon}</div>
-                <h3 className="font-bold text-[#1a2744] mb-2 group-hover:underline">{card.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{card.desc}</p>
-                <p className="text-xs font-semibold text-[#1a2744] mt-3">Read more →</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">{c.emoji}</span>
+                  <span className="text-xs font-bold text-[#8b1a2e] uppercase tracking-wide">{c.label}</span>
+                </div>
+                <h3 className="font-bold text-[#1a2744] mb-2 text-sm leading-snug group-hover:underline">{c.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed mb-3">{c.body}</p>
+                <span className="text-xs font-bold text-[#1a2744]">Read more →</span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
-      <section id="faq" className="py-24 px-6 bg-white">
+      {/* ── FAQ ── */}
+      <section id="faq" className="py-20 px-6 bg-white">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-[#1a2744] mb-3">Frequently Asked Questions</h2>
+            <h2 className="text-4xl font-extrabold text-[#1a2744] mb-3">Frequently Asked Questions</h2>
             <p className="text-gray-500">Everything you need to know</p>
           </div>
 
-          <div className="space-y-3">
-            {FAQS.map((faq, i) => (
-              <div
-                key={i}
-                className="border border-gray-100 rounded-2xl overflow-hidden"
-              >
+          <div className="space-y-2">
+            {FAQS.map((f, i) => (
+              <div key={i} className="border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
                 <button
-                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition"
+                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
-                  <span className="font-semibold text-gray-900 text-sm pr-4">{faq.q}</span>
-                  <ChevronIcon open={openFaq === i} />
+                  <span className="font-semibold text-gray-900 text-sm pr-4 leading-snug">{f.q}</span>
+                  <svg
+                    width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`}
+                  >
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
                 </button>
                 {openFaq === i && (
                   <div className="px-6 pb-5 text-sm text-gray-600 leading-relaxed border-t border-gray-50 pt-3">
-                    {faq.a}
+                    {f.a}
                   </div>
                 )}
               </div>
@@ -459,25 +492,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CTA BANNER ──────────────────────────────────────────────────── */}
-      <section className="bg-[#1a2744] py-20 px-6">
+      {/* ── FINAL CTA ── */}
+      <section className="py-20 px-6 bg-gradient-to-br from-[#1a2744] to-[#0f1c38]">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl font-extrabold text-white mb-4 leading-tight">
-            Your next role starts with<br />a great resume
+          <p className="text-[#f0a04b] text-sm font-bold uppercase tracking-widest mb-3">Ready to get started?</p>
+          <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-5 leading-tight">
+            Your next role starts with<br className="hidden sm:block" /> a great resume
           </h2>
-          <p className="text-blue-200 text-lg mb-10">
-            Build, customise, and download — completely free. No hidden fees, no subscription.
+          <p className="text-blue-200 text-lg mb-10 max-w-xl mx-auto">
+            Build, customise, and download — completely free. No hidden fees, no subscription, no watermark.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to={ctaHref}
-              className="px-8 py-4 bg-white text-[#1a2744] font-bold rounded-xl hover:bg-blue-50 transition text-base shadow-lg"
+              to={ctaLink}
+              className="px-8 py-4 bg-[#f0a04b] text-[#1a2744] font-extrabold rounded-xl hover:bg-[#e8943a] transition text-base shadow-xl shadow-[#f0a04b]/20"
             >
-              Build My Resume →
+              Build My Resume — Free →
             </Link>
             <Link
               to="/templates"
-              className="px-8 py-4 bg-transparent text-white font-bold rounded-xl border-2 border-white/30 hover:border-white/60 transition text-base"
+              className="px-8 py-4 bg-transparent text-white font-bold rounded-xl border-2 border-white/25 hover:border-white/50 hover:bg-white/10 transition text-base"
             >
               Browse Templates
             </Link>
@@ -485,57 +519,55 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer className="bg-gray-900 text-white py-16 px-6">
+      {/* ── FOOTER ── */}
+      <footer className="bg-gray-950 text-white py-16 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+            <div className="col-span-2">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-[#8b1a2e] flex items-center justify-center">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <div className="w-8 h-8 rounded-xl bg-[#8b1a2e] flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
                   </svg>
                 </div>
-                <span className="text-lg font-bold">ResumeAI</span>
+                <span className="text-lg font-bold tracking-tight">ResumeAI</span>
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Free resume builder for India's job seekers. Build professional CVs in minutes.
+              <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                Free resume builder for India's job seekers. Create professional CVs in minutes, download as PDF, get hired faster.
               </p>
             </div>
 
-            {/* Product */}
             <div>
-              <h4 className="font-bold text-sm mb-4 text-gray-300 uppercase tracking-wide">Product</h4>
-              <ul className="space-y-2.5 text-sm text-gray-400">
+              <h4 className="font-bold text-xs text-gray-400 uppercase tracking-widest mb-4">Product</h4>
+              <ul className="space-y-2.5 text-sm text-gray-500">
                 <li><Link to="/templates" className="hover:text-white transition">Templates</Link></li>
-                <li><Link to={ctaHref} className="hover:text-white transition">Resume Builder</Link></li>
+                <li><Link to={ctaLink} className="hover:text-white transition">Resume Builder</Link></li>
                 <li><Link to="/cover-letter-tips" className="hover:text-white transition">Cover Letter</Link></li>
                 <li><Link to="/dashboard" className="hover:text-white transition">Dashboard</Link></li>
               </ul>
             </div>
 
-            {/* Resources */}
             <div>
-              <h4 className="font-bold text-sm mb-4 text-gray-300 uppercase tracking-wide">Resources</h4>
-              <ul className="space-y-2.5 text-sm text-gray-400">
+              <h4 className="font-bold text-xs text-gray-400 uppercase tracking-widest mb-4">Resources</h4>
+              <ul className="space-y-2.5 text-sm text-gray-500">
                 <li><Link to="/resume-tips" className="hover:text-white transition">Resume Tips</Link></li>
                 <li><Link to="/cover-letter-tips" className="hover:text-white transition">Cover Letter Tips</Link></li>
                 <li><a href="#faq" className="hover:text-white transition">FAQ</a></li>
               </ul>
             </div>
 
-            {/* Legal */}
             <div>
-              <h4 className="font-bold text-sm mb-4 text-gray-300 uppercase tracking-wide">Legal</h4>
-              <ul className="space-y-2.5 text-sm text-gray-400">
+              <h4 className="font-bold text-xs text-gray-400 uppercase tracking-widest mb-4">Company</h4>
+              <ul className="space-y-2.5 text-sm text-gray-500">
                 <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
                 <li><a href="#" className="hover:text-white transition">Terms of Service</a></li>
+                <li><a href="mailto:baishaliroy11@gmail.com" className="hover:text-white transition">Contact</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
+          <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
             <p>© 2025 ResumeAI by Baishali Roy. All rights reserved.</p>
             <p>Made with ❤️ in India</p>
           </div>
