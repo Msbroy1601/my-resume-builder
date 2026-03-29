@@ -60,13 +60,13 @@ export default function TemplateGallery() {
   const activeTemplate = modalIdx !== null ? TEMPLATES[modalIdx] : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-6"> <div className="max-w-6xl mx-auto"> {/*  Header  */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 py-12 px-6"> <div className="max-w-6xl mx-auto"> {/*  Header  */}
         <div className="text-center mb-12"> <h1 className="text-4xl font-bold text-gray-900 mb-3">Choose Your Template</h1> <p className="text-lg text-gray-600">17 professionally designed templates — click the preview to explore</p>
 </div> {/*  Template grid  */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"> {TEMPLATES.map((t, idx) =>(
             <div
               key={t.id}
-              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-400 overflow-hidden group"
+              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all border-2 border-transparent hover:border-[#1a2744] overflow-hidden group"
             > {/* Thumbnail */}
               <div
                 className="relative overflow-hidden cursor-pointer bg-gray-100"
@@ -78,7 +78,7 @@ export default function TemplateGallery() {
                   className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 /> {/* Hover: "Use this template" overlay (matches reference) */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}> <span className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg pointer-events-none"> Use this template
+                  style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}> <span className="bg-[#1a2744] text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg pointer-events-none"> Use this template
 </span>
 </div> {/* Zoom icon bottom-right (matches reference) */}
                 <button
@@ -95,7 +95,7 @@ export default function TemplateGallery() {
 </span> )}
 </div> <p className="text-xs text-gray-500 leading-snug mb-3 line-clamp-2">{t.desc}</p> <button
                   onClick={() =>handleSelect(t.id)}
-                  className="w-full bg-blue-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition"
+                  className="w-full bg-[#1a2744] text-white text-xs font-semibold py-2 rounded-lg hover:bg-[#152235] active:bg-[#0e1830] transition"
                 > Use This Template
 </button>
 </div>
@@ -118,13 +118,13 @@ export default function TemplateGallery() {
             <div className="p-6 space-y-3"> {/* Import option */}
               <button
                 onClick={() =>navigate(`/builder?template=${choiceTemplateId}&import=true`)}
-                className="w-full flex items-start gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition text-left group"
+                className="w-full flex items-start gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-[#1a2744] hover:bg-slate-50 transition text-left group"
               > <div className="w-11 h-11 bg-orange-100 group-hover:bg-orange-200 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition"> </div> <div> <p className="font-bold text-gray-900 text-sm">Import my existing CV</p> <p className="text-xs text-gray-500 mt-0.5">Upload a PDF, Word doc, or TXT file — we'll pre-fill the form for you</p>
 </div>
 </button> {/* Scratch option */}
               <button
                 onClick={() =>navigate(`/builder?template=${choiceTemplateId}`)}
-                className="w-full flex items-start gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition text-left group"
+                className="w-full flex items-start gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-[#1a2744] hover:bg-slate-50 transition text-left group"
               > <div className="w-11 h-11 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition"> </div> <div> <p className="font-bold text-gray-900 text-sm">Start from scratch</p> <p className="text-xs text-gray-500 mt-0.5">Fill in your details fresh with role-based suggestions as you type</p>
 </div>
 </button>
@@ -181,7 +181,7 @@ export default function TemplateGallery() {
 </div> {/* CTA */}
               <div className="space-y-3"> <button
                   onClick={() =>{ setModalIdx(null); handleSelect(activeTemplate.id) }}
-                  className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition text-sm"
+                  className="w-full bg-[#1a2744] text-white font-bold py-3 rounded-xl hover:bg-[#152235] active:bg-[#0e1830] transition text-sm"
                 > Use This Template →
 </button> <button
                   onClick={() =>setModalIdx(null)}

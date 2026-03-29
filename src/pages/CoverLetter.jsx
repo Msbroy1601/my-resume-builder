@@ -147,14 +147,14 @@ export default function CoverLetter() {
                     value={targetJob}
                     onChange={e =>setTargetJob(e.target.value)}
                     placeholder="e.g. Senior Product Manager"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/500 transition"
                   />
 </div> <div> <label className="block text-sm font-semibold text-gray-700 mb-1.5">Company name <span className="text-red-500">*</span></label> <input
                     type="text"
                     value={company}
                     onChange={e =>setCompany(e.target.value)}
                     placeholder="e.g. Razorpay"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2744]/500 transition"
                   />
 </div>
 </div>
@@ -169,7 +169,7 @@ export default function CoverLetter() {
                     onClick={() =>setTone(t.id)}
                     className={`flex items-start gap-3 p-4 rounded-xl border-2 transition text-left ${
                       tone === t.id
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-[#1a2744]/30 border-500 bg-slate-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   > <span className="text-2xl">{t.icon}</span> <div> <p className={`text-sm font-bold ${tone === t.id ? 'text-blue-700' : 'text-gray-800'}`}>{t.label}</p> <p className="text-xs text-gray-500 mt-0.5">{t.desc}</p>
@@ -185,8 +185,8 @@ export default function CoverLetter() {
                       onClick={() =>toggleStrength(s)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
                         selectedStrengths.includes(s)
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300'
+                          ? 'bg-[#1a2744] text-white border-[#1a2744]/30 border-600'
+                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#1a2744]/30 border-300'
                       }`}
                     > {selectedStrengths.includes(s) ? ' ' : ''}{s}
 </button> ))}
@@ -198,7 +198,7 @@ export default function CoverLetter() {
                 <input
                   type="text"
                   placeholder="+ Type a custom strength and press Enter"
-                  className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-600"
+                  className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1a2744]/400 text-gray-600"
                   onKeyDown={e =>{
                     if (e.key === 'Enter' && e.target.value.trim()) {
                       toggleStrength(e.target.value.trim())

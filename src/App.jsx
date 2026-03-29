@@ -5,6 +5,8 @@ import TemplateGallery from './pages/TemplateGallery'
 import Builder from './pages/Builder'
 import CoverLetter from './pages/CoverLetter'
 import Dashboard from './pages/Dashboard'
+import ResumeTips from './pages/ResumeTips'
+import CoverLetterTips from './pages/CoverLetterTips'
 
 function ProtectedRoute({ children }) {
   return (
@@ -56,6 +58,8 @@ function App() {
           <ProtectedRoute> <Dashboard />
 </ProtectedRoute> }
       />
+      <Route path="/resume-tips" element={<ResumeTips />} />
+      <Route path="/cover-letter-tips" element={<CoverLetterTips />} />
 </Routes> )
 }
 

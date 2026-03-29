@@ -867,8 +867,9 @@ function Builder() {
 
   const [educationList, setEducationList] = useState([])
   const [currentEducation, setCurrentEducation] = useState({
-    school: '', degree: '', startMonth: '', startYear: '',
-    endMonth: '', endYear: '', isPresent: false, score: ''
+    school: '', degree: '', fieldOfStudy: '', schoolLocation: '',
+    startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '',
+    descBullets: ''
   })
   const [eduErrors, setEduErrors] = useState({})
   const [eduDateError, setEduDateError] = useState('')
@@ -969,7 +970,7 @@ function Builder() {
     setName(''); setEmail(''); setPhone(''); setLocation(''); setSummary(''); setNameError('')
     setWorkExperiences([]); setEducationList([]); setProjects([]); setCertifications([]); setSkillsList([]); setPhoto(null); setWebsiteLinks({ linkedin: '', github: '', portfolio: '', other: '' }); setLanguages([]); setHobbies(''); setSkillsList([]); setPhoto(null)
     setCurrentWork({ company: '', jobTitle: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, responsibilities: '', achievements: '' })
-    setCurrentEducation({ school: '', degree: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '' })
+    setCurrentEducation({ school: '', degree: '', fieldOfStudy: '', schoolLocation: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '', descBullets: '' })
     localStorage.removeItem('resumeData')
   }
 
@@ -1873,7 +1874,7 @@ function Builder() {
   const addEducation = () =>{
     if (!validateEducation()) return
     setEducationList([...educationList, currentEducation])
-    setCurrentEducation({ school: '', degree: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '' })
+    setCurrentEducation({ school: '', degree: '', fieldOfStudy: '', schoolLocation: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '', descBullets: '' })
     setEduErrors({}); setEduDateError('')
   }
 
@@ -2022,7 +2023,7 @@ function Builder() {
         {workExperiences.length >0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Work Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) =>(<div key={i}><p className="text-xl font-bold text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-blue-600 font-semibold mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Projects</h3><div className="space-y-5">{projects.map((proj, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900 mb-1">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 leading-relaxed mb-1">{proj.description}</p>}{proj.link && <p className="text-sm text-blue-500"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
-        {educationList.length >0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Education</h3><div className="space-y-5">{educationList.map((edu, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900 mb-1">{edu.school}</p><p className="text-base text-gray-700 mb-1">{edu.degree}</p><p className="text-sm text-gray-500 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? <span className="ml-2 text-blue-600 font-medium">{edu.score}</span>: null}</p></div>))}</div></div>)}
+        {educationList.length >0 && (<div className="mb-8 pb-8 border-b-2 border-gray-200"><h3 className="text-xl font-bold text-blue-600 mb-6 uppercase tracking-wide">Education</h3><div className="space-y-5">{educationList.map((edu, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900 mb-1">{edu.school}{edu.schoolLocation ? <span className="text-gray-400 font-normal text-base"> · {edu.schoolLocation}</span> : null}</p><p className="text-base text-gray-700 mb-1">{edu.degree}{edu.fieldOfStudy ? <span className="text-gray-500 font-normal"> — {edu.fieldOfStudy}</span> : null}</p><p className="text-sm text-gray-500 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? <span className="ml-2 text-blue-600 font-medium">{edu.score}</span>: null}</p>{edu.descBullets && <div className="mt-1"><BulletList text={edu.descBullets} className="text-sm text-gray-600" /></div>}</div>))}</div></div>)}
         {skillsList.length >0 && (<div className="mb-6"><h3 className="text-xl font-bold text-blue-600 mb-5 uppercase tracking-wide">Skills</h3><div className="space-y-2">{skillsList.map((sk,i) =>(<div key={i} className="flex items-center justify-between"><span className="text-base font-semibold text-gray-800">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-3 h-3 rounded-full ${sk.level>=n?'bg-blue-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
         {certifications.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Certifications</h3><div className="space-y-2">{certifications.map((cert,i) =>(<div key={i}><p className="font-semibold text-gray-900">{cert.name}</p>{(cert.issuer||cert.year) && <p className="text-sm text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}</div>))}</div></div>)}
         {languages.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Languages</h3><div className="flex flex-wrap gap-3">{languages.map((lang,i) =>(<div key={i} className="flex items-center gap-2"><span className="font-medium text-gray-800">{lang.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-blue-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -2036,7 +2037,7 @@ function Builder() {
         {workExperiences.length >0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Professional Experience</h3><div className="space-y-6">{workExperiences.map((exp, i) =>(<div key={i}><p className="font-bold text-gray-900 text-lg mb-1">{exp.jobTitle}</p><p className="text-base text-gray-800 italic mb-2">{exp.company} | {formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Projects</h3><div className="space-y-4">{projects.map((proj, i) =>(<div key={i}><p className="font-bold text-gray-900 text-base">{proj.name}</p>{proj.description && <p className="text-base text-gray-800 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-gray-600 italic mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
-        {educationList.length >0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Education</h3><div className="space-y-4">{educationList.map((edu, i) =>(<div key={i}><p className="font-bold text-gray-900 text-base">{edu.school}</p><p className="text-base text-gray-800">{edu.degree} | {formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
+        {educationList.length >0 && (<div className="mb-10"><h3 className="text-lg font-bold text-gray-900 mb-5 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Education</h3><div className="space-y-4">{educationList.map((edu, i) =>(<div key={i}><p className="font-bold text-gray-900 text-base">{edu.school}{edu.schoolLocation ? <span className="font-normal text-gray-500 text-sm"> · {edu.schoolLocation}</span> : null}</p><p className="text-base text-gray-800">{edu.degree}{edu.fieldOfStudy ? <span className="text-gray-600"> — {edu.fieldOfStudy}</span> : null} | {formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p>{edu.descBullets && <BulletList text={edu.descBullets} className="text-sm text-gray-700 mt-1" />}</div>))}</div></div>)}
         {skillsList.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase border-b-4 border-gray-900 pb-2 tracking-wider">Skills</h3><div className="grid grid-cols-2 gap-2">{skillsList.map((sk,i) =>(<div key={i} className="flex items-center justify-between"><span className="text-base text-gray-800 font-medium">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${sk.level>=n?'bg-gray-800':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
         {certifications.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Certifications</h3><div className="space-y-2">{certifications.map((cert,i) =>(<div key={i}><p className="font-semibold text-gray-900">{cert.name}</p>{(cert.issuer||cert.year) && <p className="text-sm text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}</div>))}</div></div>)}
         {languages.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Languages</h3><div className="flex flex-wrap gap-3">{languages.map((lang,i) =>(<div key={i} className="flex items-center gap-2"><span className="font-medium text-gray-800">{lang.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-gray-700':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -2050,7 +2051,7 @@ function Builder() {
         {workExperiences.length >0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Experience</h3><div className="space-y-8">{workExperiences.map((exp, i) =>(<div key={i}><p className="text-lg font-medium text-gray-900 mb-1">{exp.jobTitle}</p><p className="text-base text-gray-600 font-light mb-1">{exp.company}</p><p className="text-sm text-gray-500 mb-3 font-light">{formatDate(exp.startMonth, exp.startYear)} — {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-100"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Projects</h3><div className="space-y-5">{projects.map((proj, i) =>(<div key={i}><p className="text-base font-medium text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-700 font-light mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-gray-400 font-light mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
-        {educationList.length >0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Education</h3><div className="space-y-5">{educationList.map((edu, i) =>(<div key={i}><p className="text-base font-medium text-gray-900">{edu.school}</p><p className="text-base text-gray-700 font-light">{edu.degree}</p><p className="text-sm text-gray-500 font-light">{formatDate(edu.startMonth, edu.startYear)} — {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
+        {educationList.length >0 && (<div className="mb-12"><h3 className="text-sm font-semibold text-gray-900 mb-6 tracking-widest uppercase">Education</h3><div className="space-y-5">{educationList.map((edu, i) =>(<div key={i}><p className="text-base font-medium text-gray-900">{edu.school}{edu.schoolLocation ? <span className="font-light text-gray-400 text-sm"> · {edu.schoolLocation}</span> : null}</p><p className="text-base text-gray-700 font-light">{edu.degree}{edu.fieldOfStudy ? <span className="text-gray-500"> — {edu.fieldOfStudy}</span> : null}</p><p className="text-sm text-gray-500 font-light">{formatDate(edu.startMonth, edu.startYear)} — {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p>{edu.descBullets && <BulletList text={edu.descBullets} className="text-sm text-gray-500 font-light mt-1" />}</div>))}</div></div>)}
         {skillsList.length >0 && (<div className="mb-6"><h3 className="text-sm font-semibold text-gray-900 mb-5 tracking-widest uppercase">Skills</h3><div className="space-y-2">{skillsList.map((sk,i) =>(<div key={i} className="flex items-center justify-between"><span className="text-base text-gray-700 font-light">{sk.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${sk.level>=n?'bg-gray-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
         {certifications.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-gray-700 mb-4 uppercase tracking-wide">Certifications</h3><div className="space-y-2">{certifications.map((cert,i) =>(<div key={i}><p className="font-semibold text-gray-900">{cert.name}</p>{(cert.issuer||cert.year) && <p className="text-sm text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}</div>))}</div></div>)}
         {languages.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-gray-700 mb-4 uppercase tracking-wide">Languages</h3><div className="flex flex-wrap gap-3">{languages.map((lang,i) =>(<div key={i} className="flex items-center gap-2"><span className="font-medium text-gray-800">{lang.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-gray-400':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -2078,7 +2079,7 @@ function Builder() {
         {workExperiences.length >0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Professional Experience</h3><div className="space-y-6 ml-5">{workExperiences.map((exp, i) =>(<div key={i}><div className="flex justify-between items-baseline mb-2"><p className="text-xl font-bold text-gray-900">{exp.jobTitle}</p><p className="text-sm text-gray-600 italic">{formatDate(exp.startMonth, exp.startYear)} - {formatDate(exp.endMonth, exp.endYear, exp.isPresent)}</p></div><p className="text-base text-blue-600 font-semibold mb-3">{exp.company}</p>{exp.responsibilities && <BulletList text={exp.responsibilities} className="text-sm text-gray-700 leading-relaxed" />}
 {exp.achievements && <div className="mt-3 pt-2 border-t border-gray-300"><p className="text-xs font-bold text-gray-900 mb-1">Achievements:</p><BulletList text={exp.achievements} className="text-sm text-gray-700 leading-relaxed" /></div>}</div>))}</div></div>)}
         {projects.length >0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Projects</h3><div className="space-y-5 ml-5">{projects.map((proj, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900">{proj.name}</p>{proj.description && <p className="text-base text-gray-800 mt-1">{proj.description}</p>}{proj.link && <p className="text-sm text-blue-500 mt-1"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}</div>))}</div></div>)}
-        {educationList.length >0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Education</h3><div className="space-y-5 ml-5">{educationList.map((edu, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900">{edu.school}</p><p className="text-base text-gray-800 mb-1">{edu.degree}</p><p className="text-sm text-gray-600 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p></div>))}</div></div>)}
+        {educationList.length >0 && (<div className="mb-10 pb-6 border-b-2 border-gray-300"><h3 className="text-lg font-bold text-blue-600 mb-6 uppercase tracking-wide">Education</h3><div className="space-y-5 ml-5">{educationList.map((edu, i) =>(<div key={i}><p className="text-lg font-bold text-gray-900">{edu.school}{edu.schoolLocation ? <span className="font-normal text-gray-500 text-sm"> · {edu.schoolLocation}</span> : null}</p><p className="text-base text-gray-800 mb-1">{edu.degree}{edu.fieldOfStudy ? <span className="text-gray-600 font-normal"> — {edu.fieldOfStudy}</span> : null}</p><p className="text-sm text-gray-600 italic">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}</p>{edu.descBullets && <BulletList text={edu.descBullets} className="text-sm text-gray-600 mt-1" />}</div>))}</div></div>)}
         {skillsList.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-blue-600 mb-5 uppercase tracking-wide">Core Competencies</h3><div className="grid grid-cols-2 gap-2 ml-5">{skillsList.map((sk,i) =>(<div key={i} className="flex items-center justify-between"><div className="flex items-center"><span className="text-base text-gray-800">{sk.name}</span></div><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${sk.level>=n?'bg-blue-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
         {certifications.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Certifications</h3><div className="space-y-2">{certifications.map((cert,i) =>(<div key={i}><p className="font-semibold text-gray-900">{cert.name}</p>{(cert.issuer||cert.year) && <p className="text-sm text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}</div>))}</div></div>)}
         {languages.length >0 && (<div className="mb-6"><h3 className="text-lg font-bold text-blue-600 mb-4 uppercase tracking-wide">Languages</h3><div className="flex flex-wrap gap-3">{languages.map((lang,i) =>(<div key={i} className="flex items-center gap-2"><span className="font-medium text-gray-800">{lang.name}</span><div className="flex gap-1">{[1,2,3,4,5].map(n =><span key={n} className={`w-2.5 h-2.5 rounded-full ${lang.level>=n?'bg-blue-500':'bg-gray-200'}`}></span>)}</div></div>))}</div></div>)}
@@ -2391,7 +2392,7 @@ const BlueSidebarTemplate = () =>(
             </div>
           </div>
         </div>
-      </header> <div className="max-w-7xl mx-auto px-8 py-8"> <div className="grid grid-cols-1 lg:grid-cols-2 gap-8"> {/* LEFT: FORM */}
+      </header> <div className="max-w-7xl mx-auto px-8 py-8"> <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] xl:grid-cols-[55%_45%] gap-8"> {/* LEFT: FORM */}
           <div className="space-y-6"> {/*  SECTION PROGRESS BAR  */}
             {(() =>{
               const sections = [
@@ -2648,6 +2649,29 @@ const BlueSidebarTemplate = () =>(
 </div>
 </div> {eduDateError && <p className="text-red-500 text-sm bg-red-50 px-3 py-2 rounded-lg border border-red-200">{eduDateError}</p>}
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">Field of Study <span className="text-gray-400 font-normal">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={currentEducation.fieldOfStudy || ''}
+                      onChange={e => setCurrentEducation({ ...currentEducation, fieldOfStudy: e.target.value })}
+                      placeholder="e.g. Computer Science"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">Location <span className="text-gray-400 font-normal">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={currentEducation.schoolLocation || ''}
+                      onChange={e => setCurrentEducation({ ...currentEducation, schoolLocation: e.target.value })}
+                      placeholder="e.g. Mumbai, India"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+                    />
+                  </div>
+                </div>
+
                 <div> <label className="block text-sm font-semibold mb-2 text-gray-700">Score / CGPA <span className="text-gray-400 font-normal">(optional)</span></label> <input type="text" value={currentEducation.score || ''} onChange={e =>{
                       const val = e.target.value
                       // Allow only numbers and one decimal point
@@ -2660,10 +2684,24 @@ const BlueSidebarTemplate = () =>(
                     }}
                     placeholder="e.g. 8.5 or 78"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-</div> <button onClick={addEducation} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-md"> + Add Education
+</div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Description / Achievements <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <textarea
+                    value={currentEducation.descBullets || ''}
+                    onChange={e => setCurrentEducation({ ...currentEducation, descBullets: e.target.value })}
+                    placeholder="• Dean's List, GPA 3.9/4.0&#10;• Thesis: Machine Learning in Healthcare&#10;• Led university coding club"
+                    rows="3"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Add notable achievements, relevant coursework, or activities. One per line.</p>
+                </div>
+
+                <button onClick={addEducation} className="w-full bg-[#1a2744] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#152235] transition shadow-md"> + Add Education
 </button> {educationList.length >0 && (
                   <div className="mt-4 space-y-3"> <h3 className="text-sm font-semibold text-gray-700">Added ({educationList.length}):</h3> {educationList.map((edu, i) =>(
-                      <div key={i} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 flex justify-between items-start"> <div> <p className="font-semibold text-gray-900">{edu.school}</p> <p className="text-sm text-gray-600">{edu.degree}</p> <p className="text-xs text-gray-500">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? ` · ${edu.score}` : ''}</p>
+                      <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-start"> <div> <p className="font-semibold text-gray-900">{edu.school}{edu.schoolLocation ? ` · ${edu.schoolLocation}` : ''}</p> <p className="text-sm text-gray-600">{edu.degree}{edu.fieldOfStudy ? ` — ${edu.fieldOfStudy}` : ''}</p> <p className="text-xs text-gray-500">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? ` · ${edu.score}` : ''}</p>
 </div> <button onClick={() =>deleteEducation(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition">Delete</button>
 </div> ))}
 </div> )}
