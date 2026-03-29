@@ -1321,13 +1321,15 @@ function Builder() {
     setJobMatchResult(null)
   }
 
-  //  CV IMPORT 
+  //  CV IMPORT
   const [showImport, setShowImport] = useState(false)
   const [importLoading, setImportLoading] = useState(false)
   const [importMsg, setImportMsg] = useState(null)
   const [importPreview, setImportPreview] = useState(null) // parsed data before applying
   const [importPasteText, setImportPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
+  const [importRawText, setImportRawText] = useState('')
+  const [showImportRawText, setShowImportRawText] = useState(false)
 
   const [showTuneUp, setShowTuneUp] = useState(false)
   const [tuneUpLoading, setTuneUpLoading] = useState(false)
@@ -1354,49 +1356,70 @@ function Builder() {
     }
 
     // ── Email
-    const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}/)
+    const emailMatch = text.match(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/)
     if (emailMatch) result.email = emailMatch[0]
 
     // ── Phone
     const phoneMatch = text.match(/(\+?[\d][\d\s\-().]{7,15}\d)/)
     if (phoneMatch) result.phone = phoneMatch[0].trim()
 
-    // ── Name — first short line that isn't contact info or a section header
-    const SECTION_HEADERS = /^(summary|profile|about|objective|experience|education|skills|projects|certifications|languages|hobbies|references|work|employment|academic)/i
-    for (const line of lines.slice(0, 8)) {
-      if (!line.match(/@|http|linkedin|github|www\.|^\+?\d/) &&
-          !SECTION_HEADERS.test(line) &&
-          line.length >= 2 && line.length <= 60 &&
-          /[a-zA-Z]/.test(line)) {
-        result.name = line; break
+    // ── Helper: strip decorative chars from start/end of a line before section matching
+    const cleanLine = (l) => l.replace(/^[\s\-—–•*|=_~#+]+|[\s\-—–•*|=_~#+:]+$/g, '').trim()
+
+    // ── Broad section header pattern (used to stop collecting content and to skip in name detection)
+    const ANY_SECTION = /^(summary|profile|about|objective|experience|work|employment|career|professional background|education|academic|qualification|skills|competencies|technologies|expertise|projects|certification|certificate|award|achievement|language|hobbies|interest|reference|activities|volunteer)/i
+
+    // ── Name — first short non-contact, non-header line in top 10 lines
+    for (const line of lines.slice(0, 10)) {
+      const cl = cleanLine(line)
+      if (
+        cl.length >= 2 && cl.length <= 60 &&
+        /[a-zA-Z]/.test(cl) &&
+        !cl.match(/@|http|linkedin|github|www\.|^\+?\d/) &&
+        !ANY_SECTION.test(cl) &&
+        !/^\d/.test(cl) &&
+        // Must look like a name: mostly letters, spaces, dots, hyphens
+        /^[A-Za-z][A-Za-z.\-'\s]{1,55}$/.test(cl)
+      ) {
+        result.name = cl; break
       }
     }
 
-    // ── Location — flexible: city, state, country or just city
+    // ── Location — flexible city/country patterns
     const locPatterns = [
       /\b([A-Z][a-z]+(?:[\s,]+[A-Z][a-z]+){0,3})\s*[,|]\s*(India|UK|US|USA|United Kingdom|United States|Australia|Canada|Singapore|UAE|Remote)\b/,
       /\b(Mumbai|Delhi|Bangalore|Bengaluru|Hyderabad|Chennai|Pune|Kolkata|Ahmedabad|Jaipur|Surat|Lucknow|Noida|Gurugram|Gurgaon|Indore|Bhopal|Patna|Chandigarh|Kochi|Coimbatore|Nagpur|Visakhapatnam|London|New York|San Francisco|Sydney|Toronto|Dubai|Singapore)\b/i,
     ]
     for (const pat of locPatterns) {
-      const m = text.slice(0, 500).match(pat)
+      const m = text.slice(0, 600).match(pat)
       if (m) { result.location = m[0].trim(); break }
     }
 
-    // ── Helper: find section start index
-    const findSection = (patterns) => lines.findIndex(l => patterns.some(p => p.test(l.trim())))
+    // ── Helper: find the first line matching any of the given patterns
+    // We clean each line before testing so decorative chars don't block matching
+    const findSection = (patterns) => lines.findIndex(l => {
+      const cl = cleanLine(l)
+      return cl.length > 0 && patterns.some(p => p.test(cl))
+    })
 
-    const summaryIdx  = findSection([/^(summary|profile|about me|objective|professional summary|career objective)/i])
-    const expIdx      = findSection([/^(experience|work experience|employment history|professional experience|work history)/i])
-    const eduIdx      = findSection([/^(education|academic background|qualifications|academic)/i])
-    const skillsIdx   = findSection([/^(skills|technical skills|core skills|key skills|competencies|technologies)/i])
-    const projectsIdx = findSection([/^(projects|personal projects|key projects)/i])
-    const certIdx     = findSection([/^(certifications|certificates|awards|achievements)/i])
+    const summaryIdx  = findSection([/^(summary|profile|about me|about|objective|professional summary|career objective|personal statement|personal profile|executive summary)/i])
+    const expIdx      = findSection([/^(experience|work experience|employment history|professional experience|work history|career history|employment|professional background|career summary)/i])
+    const eduIdx      = findSection([/^(education|academic background|qualifications|academic qualifications|educational background|academic history|education and training)/i])
+    const skillsIdx   = findSection([/^(skills|technical skills|core skills|key skills|competencies|technologies|areas of expertise|expertise|technical expertise|tools & technologies|tools and technologies|tools)/i])
+    const projectsIdx = findSection([/^(projects|personal projects|key projects|notable projects|selected projects)/i])
+    const certIdx     = findSection([/^(certifications|certificates|awards|achievements|licenses|honors)/i])
+
+    // Helper: next section boundary after a given index
+    const allSectionIdxs = [summaryIdx, expIdx, eduIdx, skillsIdx, projectsIdx, certIdx].filter(i => i > -1)
+    const nextSectionAfter = (idx) =>
+      allSectionIdxs.filter(i => i > idx).reduce((min, i) => (i < min ? i : min), lines.length)
 
     // ── Summary
     if (summaryIdx !== -1) {
+      const end = nextSectionAfter(summaryIdx)
       const summaryLines = []
-      for (let i = summaryIdx + 1; i < Math.min(summaryIdx + 8, lines.length); i++) {
-        if (SECTION_HEADERS.test(lines[i])) break
+      for (let i = summaryIdx + 1; i < Math.min(end, summaryIdx + 12); i++) {
+        if (ANY_SECTION.test(cleanLine(lines[i]))) break
         summaryLines.push(lines[i])
       }
       result.summary = summaryLines.join(' ').trim()
@@ -1404,87 +1427,87 @@ function Builder() {
 
     // ── Skills
     if (skillsIdx !== -1) {
+      const end = nextSectionAfter(skillsIdx)
       const skillLines = []
-      for (let i = skillsIdx + 1; i < Math.min(skillsIdx + 20, lines.length); i++) {
-        if (SECTION_HEADERS.test(lines[i]) && !/^(skills)/i.test(lines[i])) break
+      for (let i = skillsIdx + 1; i < Math.min(end, skillsIdx + 30); i++) {
         skillLines.push(lines[i])
       }
       const skillText = skillLines.join(', ')
-      const skills = skillText.split(/[,•|·\n\/]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 50 && /[a-zA-Z]/.test(s))
-      result.skillsList = [...new Set(skills)].slice(0, 20).map(name => ({ name, level: 3 }))
+      const skills = skillText.split(/[,•|·\n\/;]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 50 && /[a-zA-Z]/.test(s))
+      result.skillsList = [...new Set(skills)].slice(0, 25).map(sName => ({ name: sName, level: 3 }))
     }
 
     // ── Work Experience
-    // Most CVs: Job Title → Company → Date → Bullets  (NOT Date → Title → Company)
-    const DATE_RE = /((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]*\d{4}|\d{4})\s*[-–—to]+\s*((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]*\d{4}|\d{4}|Present|Current|Now)/i
+    const DATE_RE = /((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]*\d{4}|\b\d{4}\b)\s*[-–—to]+\s*((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]*\d{4}|\b\d{4}\b|Present|Current|Now)/i
 
     if (expIdx !== -1) {
-      const sectionEndIdx = [eduIdx, skillsIdx, projectsIdx, certIdx]
-        .filter(i => i > expIdx)
-        .reduce((min, i) => (i < min ? i : min), lines.length)
-      const expLines = lines.slice(expIdx + 1, sectionEndIdx)
+      const end = nextSectionAfter(expIdx)
+      const expLines = lines.slice(expIdx + 1, end)
 
-      // First pass: identify job blocks by date lines
       const jobBlocks = []
       let currentBlock = null
+
+      const isBullet = (l) => /^[•\-·\*]/.test(l)
+      const isValidTitleLine = (l) => l && l.length > 1 && l.length < 100 && /[a-zA-Z]/.test(l) && !l.match(DATE_RE) && !isBullet(l)
 
       for (let i = 0; i < expLines.length; i++) {
         const line = expLines[i]
         const dateMatch = line.match(DATE_RE)
 
         if (dateMatch) {
-          // Save previous block
           if (currentBlock) jobBlocks.push(currentBlock)
           const dateStr = dateMatch[0]
           const parts = dateStr.split(/\s*[-–—to]+\s*/i)
-          const startStr = parts[0] || ''
-          const endStr   = parts[1] || ''
+          const startStr = (parts[0] || '').trim()
+          const endStr   = (parts[1] || '').trim()
           const isPresent = /present|current|now/i.test(endStr)
           const start = parseMonthYear(startStr)
-          const end   = isPresent ? { month: '', year: '' } : parseMonthYear(endStr)
-          currentBlock = {
-            dateLineIdx: i, startStr, endStr, isPresent,
-            startMonth: start.month, startYear: start.year,
-            endMonth: end.month, endYear: end.year,
-            beforeLines: [], afterLines: []
-          }
-          // Collect lines before this date line (within current block, going back up to 3)
+          const end2  = isPresent ? { month: '', year: '' } : parseMonthYear(endStr)
+
+          // Collect lines immediately before this date that look like title/company
+          // (go back up to 3, stop at bullets or another date)
+          const bLines = []
           let b = i - 1
-          while (b >= 0 && (i - b) <= 3 && !expLines[b]?.match(DATE_RE)) {
-            currentBlock.beforeLines.unshift(expLines[b])
+          while (b >= 0 && (i - b) <= 3) {
+            const bl = expLines[b]
+            if (!bl || bl.match(DATE_RE) || isBullet(bl)) break
+            bLines.unshift(bl)
             b--
           }
+
+          currentBlock = {
+            startMonth: start.month, startYear: start.year,
+            endMonth: end2.month, endYear: end2.year,
+            isPresent,
+            beforeLines: bLines,
+            afterLines: []
+          }
         } else if (currentBlock) {
-          if (!line.match(DATE_RE)) currentBlock.afterLines.push(line)
+          currentBlock.afterLines.push(line)
         }
       }
       if (currentBlock) jobBlocks.push(currentBlock)
 
-      // Second pass: extract job title, company, responsibilities from each block
       for (const block of jobBlocks) {
         let jobTitle = '', company = ''
+        const bCands = block.beforeLines.filter(isValidTitleLine)
+        const aCands = block.afterLines.filter(isValidTitleLine)
 
-        // Title/company typically appear right before the date (beforeLines) or right after (afterLines)
-        const candidates = [...block.beforeLines.filter(l => l.length > 1 && l.length < 80 && /[a-zA-Z]/.test(l) && !l.match(DATE_RE))]
-        if (candidates.length >= 2) {
-          jobTitle = candidates[candidates.length - 2] || ''
-          company  = candidates[candidates.length - 1] || ''
-        } else if (candidates.length === 1) {
-          jobTitle = candidates[0]
-          // Try first afterLine as company
-          const firstAfter = block.afterLines.find(l => l.length > 1 && l.length < 80 && !/^[•\-·]/.test(l))
-          company = firstAfter || ''
+        if (bCands.length >= 2) {
+          jobTitle = bCands[bCands.length - 2]
+          company  = bCands[bCands.length - 1]
+        } else if (bCands.length === 1) {
+          jobTitle = bCands[0]
+          company  = aCands[0] || ''
         } else {
           // Date came first — title/company are in afterLines
-          const notBullet = block.afterLines.filter(l => l.length > 1 && l.length < 80 && !/^[•\-·]/.test(l) && /[a-zA-Z]/.test(l))
-          jobTitle = notBullet[0] || ''
-          company  = notBullet[1] || ''
+          jobTitle = aCands[0] || ''
+          company  = aCands[1] || ''
         }
 
-        // Responsibilities: bullet lines in afterLines
         const respLines = block.afterLines
-          .filter(l => l.startsWith('•') || l.startsWith('-') || l.startsWith('·') || (l.length > 20 && l !== company && l !== jobTitle))
-          .map(l => l.replace(/^[•\-·]\s*/, ''))
+          .filter(l => isBullet(l) || (l.length > 20 && l !== company && l !== jobTitle))
+          .map(l => l.replace(/^[•\-·\*]\s*/, ''))
           .filter(l => l.length > 5)
 
         result.workExperiences.push({
@@ -1501,30 +1524,31 @@ function Builder() {
 
     // ── Education
     if (eduIdx !== -1) {
-      const sectionEndIdx = [skillsIdx, expIdx, projectsIdx]
-        .filter(i => i > eduIdx)
-        .reduce((min, i) => (i < min ? i : min), lines.length)
-      const eduLines = lines.slice(eduIdx + 1, sectionEndIdx)
+      const end = nextSectionAfter(eduIdx)
+      const eduLines = lines.slice(eduIdx + 1, end)
       let currentEdu = null
 
       for (const line of eduLines) {
-        if (SECTION_HEADERS.test(line) && !/^(education)/i.test(line)) break
+        if (ANY_SECTION.test(cleanLine(line)) && !/^(education)/i.test(cleanLine(line))) break
         const years = line.match(/\b(19|20)\d{2}\b/g) || []
         const hasYear = years.length > 0
         if (hasYear) {
           if (currentEdu) result.educationList.push(currentEdu)
+          // Check if the year line itself contains degree info
+          const lineWithoutYear = line.replace(/\b(19|20)\d{2}\b/g, '').replace(/[-–—to|/]+/g, '').trim()
           currentEdu = {
-            school: '', degree: '',
+            school: '', degree: lineWithoutYear.length > 2 ? lineWithoutYear : '',
             startMonth: '', startYear: years[0] || '',
             endMonth: '', endYear: years[1] || years[0] || '',
             isPresent: /present/i.test(line), score: ''
           }
-        } else if (currentEdu && !currentEdu.degree && line.length > 2 && line.length < 120) {
-          currentEdu.degree = line
-        } else if (currentEdu && !currentEdu.school && line.length > 2 && line.length < 120) {
-          currentEdu.school = line
-        } else if (!currentEdu && line.length > 2 && line.length < 120 && /[a-zA-Z]/.test(line)) {
-          // Degree/school before any date line
+        } else if (currentEdu) {
+          if (!currentEdu.degree && line.length > 2 && line.length < 120) {
+            currentEdu.degree = line
+          } else if (!currentEdu.school && line.length > 2 && line.length < 120) {
+            currentEdu.school = line
+          }
+        } else if (line.length > 2 && line.length < 120 && /[a-zA-Z]/.test(line)) {
           currentEdu = { school: '', degree: line, startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '' }
         }
       }
@@ -1534,78 +1558,134 @@ function Builder() {
     return result
   }
 
-  const handleImportFile = async (file) =>{
+  const handleImportFile = async (file) => {
     if (!file) return
     setImportLoading(true)
     setImportMsg(null)
     setImportPreview(null)
+    setImportRawText('')
+    setShowImportRawText(false)
     try {
       let text = ''
-      if (file.name.endsWith('.pdf')) {
-        const pdfjsLib = await import('pdfjs-dist')
+      const fileName = file.name.toLowerCase()
+
+      if (fileName.endsWith('.pdf')) {
+        // ── PDF: use pdfjs-dist with y-position grouping for correct line order
+        let pdfjsLib
+        try {
+          pdfjsLib = await import('pdfjs-dist')
+          // Handle both named-export and default-export module formats
+          if (pdfjsLib.default && pdfjsLib.default.getDocument) pdfjsLib = pdfjsLib.default
+        } catch (importErr) {
+          throw new Error('PDF library failed to load. Please try uploading a DOCX or paste your CV text.')
+        }
+
         pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         const arrayBuffer = await file.arrayBuffer()
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i)
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum)
           const content = await page.getTextContent()
-          // Reconstruct proper line breaks using y-position (transform[5])
-          // Items on the same visual line share approximately the same y value
-          let lastY = null
-          let lineBuffer = []
-          const pageLines = []
+
+          // Group text items by their y-coordinate (quantized to 2px buckets)
+          // This handles PDFs where items are not in reading order in the content stream
+          const lineMap = new Map()
           for (const item of content.items) {
-            if (!('str' in item) || !item.str.trim()) continue
-            const y = Math.round(item.transform[5])
-            if (lastY !== null && Math.abs(y - lastY) > 3) {
-              // New visual line
-              if (lineBuffer.length) pageLines.push(lineBuffer.join(' ').trim())
-              lineBuffer = []
-            }
-            lineBuffer.push(item.str)
-            lastY = y
+            if (!('str' in item) || !item.str) continue
+            const rawY = item.transform[5]
+            const y = Math.round(rawY / 2) * 2   // quantize: items within 2px = same line
+            const x = item.transform[4]
+            if (!lineMap.has(y)) lineMap.set(y, [])
+            lineMap.get(y).push({ str: item.str, x })
           }
-          if (lineBuffer.length) pageLines.push(lineBuffer.join(' ').trim())
+
+          // Sort y descending (larger y = higher on page in PDF coordinate system)
+          // Within each line sort by x ascending (left → right)
+          const sortedYs = [...lineMap.keys()].sort((a, b) => b - a)
+          const pageLines = sortedYs
+            .map(y => lineMap.get(y).sort((a, b) => a.x - b.x).map(i => i.str).join(' ').trim())
+            .filter(Boolean)
           text += pageLines.join('\n') + '\n'
         }
-      } else if (file.name.endsWith('.docx')) {
+
+      } else if (fileName.endsWith('.docx')) {
         const mammoth = await import('mammoth')
         const arrayBuffer = await file.arrayBuffer()
         const result = await mammoth.extractRawText({ arrayBuffer })
         text = result.value
-      } else if (file.name.endsWith('.txt')) {
+
+      } else if (fileName.endsWith('.txt')) {
         text = await file.text()
+
       } else {
         setImportMsg({ type: 'error', text: 'Please upload a PDF, DOCX, or TXT file.' })
         setImportLoading(false)
         return
       }
-      if (!text.trim()) throw new Error('No text could be extracted from this file.')
+
+      if (!text.trim()) throw new Error('No text could be extracted from this file. The file may be empty, image-based, or password-protected.')
+
+      setImportRawText(text)  // Store raw text for debug view
+
       const parsed = extractFromText(text)
-      const detectedCount = [parsed.name, parsed.email, parsed.phone, parsed.summary]
-        .filter(Boolean).length + (parsed.workExperiences?.length || 0) + (parsed.educationList?.length || 0) + (parsed.skillsList?.length || 0)
+      const detectedCount = [parsed.name, parsed.email, parsed.phone, parsed.location, parsed.summary]
+        .filter(Boolean).length +
+        (parsed.workExperiences?.length || 0) +
+        (parsed.educationList?.length || 0) +
+        (parsed.skillsList?.length || 0)
+
       setImportPreview(parsed)
-      setImportMsg({ type: 'success', text: `Extracted ${text.split('\n').filter(Boolean).length} lines of text. ${detectedCount > 0 ? `Detected ${detectedCount} fields — review below and click "Apply to CV".` : 'Could not detect structured fields. Try the paste option below.'}` })
+      if (detectedCount > 0) {
+        setImportMsg({ type: 'success', text: `Extracted ${text.split('\n').filter(Boolean).length} lines. Detected ${detectedCount} fields — review below and click "Apply to CV".` })
+      } else {
+        setImportMsg({ type: 'error', text: 'Could not detect structured fields. Check the raw text below to see what was extracted, or paste your CV text manually.' })
+        setShowImportRawText(true)  // Auto-show raw text if parsing found nothing
+      }
+
     } catch (err) {
-      console.error(err)
-      setImportMsg({ type: 'error', text: 'Could not parse this file. Try a different format or paste your CV text manually.' })
+      console.error('CV Import error:', err)
+      setImportMsg({ type: 'error', text: `Could not read this file: ${err.message || 'Unknown error'}. Try a DOCX file or paste your CV text manually.` })
     }
     setImportLoading(false)
   }
 
-  const applyImport = () =>{
+  const applyImport = () => {
     if (!importPreview) return
-    if (importPreview.name) setName(importPreview.name)
-    if (importPreview.email) setEmail(importPreview.email)
-    if (importPreview.phone) setPhone(importPreview.phone)
-    if (importPreview.location) setLocation(importPreview.location)
-    if (importPreview.summary) setSummary(importPreview.summary)
-    if (importPreview.workExperiences?.length) setWorkExperiences(importPreview.workExperiences)
-    if (importPreview.educationList?.length) setEducationList(importPreview.educationList)
-    if (importPreview.skillsList?.length) setSkillsList(importPreview.skillsList)
+    // Resolve each field: use imported value if present, else keep existing
+    const newName     = importPreview.name     || name
+    const newEmail    = importPreview.email    || email
+    const newPhone    = importPreview.phone    || phone
+    const newLocation = importPreview.location || location
+    const newSummary  = importPreview.summary  || summary
+    const newWork     = importPreview.workExperiences?.length ? importPreview.workExperiences : workExperiences
+    const newEdu      = importPreview.educationList?.length   ? importPreview.educationList   : educationList
+    const newSkills   = importPreview.skillsList?.length      ? importPreview.skillsList      : skillsList
+
+    if (importPreview.name)                    setName(newName)
+    if (importPreview.email)                   setEmail(newEmail)
+    if (importPreview.phone)                   setPhone(newPhone)
+    if (importPreview.location)                setLocation(newLocation)
+    if (importPreview.summary)                 setSummary(newSummary)
+    if (importPreview.workExperiences?.length) setWorkExperiences(newWork)
+    if (importPreview.educationList?.length)   setEducationList(newEdu)
+    if (importPreview.skillsList?.length)      setSkillsList(newSkills)
+
+    // Immediately persist to localStorage so the form reflects the import on reload
+    try {
+      localStorage.setItem('resumeData', JSON.stringify({
+        name: newName, email: newEmail, phone: newPhone,
+        location: newLocation, summary: newSummary,
+        workExperiences: newWork, educationList: newEdu, skillsList: newSkills,
+        projects, certifications, websiteLinks, languages, hobbies, selectedTemplate, photo
+      }))
+    } catch (e) { console.error('localStorage save failed:', e) }
+
     setShowImport(false)
     setImportPreview(null)
     setImportMsg(null)
+    setImportRawText('')
+    setShowImportRawText(false)
   }
 
   const formatDate = (month, year, isPresent) =>{
@@ -2868,6 +2948,25 @@ const BlueSidebarTemplate = () =>(
 
                   <p className="text-xs text-gray-400 italic">This overwrites your current form data. You can edit anything after applying.</p>
 </div> )}
+
+              {/* Raw text debug toggle */}
+              {importRawText && (
+                <div className="border border-gray-100 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setShowImportRawText(p => !p)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-500 font-medium transition"
+                  >
+                    <span>Show extracted raw text (for debugging)</span>
+                    <span>{showImportRawText ? '▲' : '▼'}</span>
+                  </button>
+                  {showImportRawText && (
+                    <pre className="px-4 py-3 text-xs text-gray-600 bg-white overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto font-mono leading-relaxed">
+                      {importRawText}
+                    </pre>
+                  )}
+                </div>
+              )}
+
 </div> <div className="px-6 py-4 border-t border-gray-100 space-y-2"> {importPreview && (
                 <button onClick={applyImport} className="w-full py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition text-sm"> Apply to CV
 </button> )}
