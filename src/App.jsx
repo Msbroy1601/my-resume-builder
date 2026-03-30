@@ -10,6 +10,7 @@ import CoverLetter from './pages/CoverLetter'
 import Dashboard from './pages/Dashboard'
 import ResumeTips from './pages/ResumeTips'
 import CoverLetterTips from './pages/CoverLetterTips'
+import Pricing from './pages/Pricing'
 
 function ProtectedRoute({ children }) {
   return (
@@ -39,6 +40,7 @@ function App() {
       <Route path="/cover-letter-templates" element={<CoverLetterTemplates />} />
       <Route path="/resume-tips"            element={<ResumeTips />} />
       <Route path="/cover-letter-tips"      element={<CoverLetterTips />} />
+      <Route path="/pricing"                element={<Pricing />} />
 
       {/* Auth */}
       <Route path="/signup/sso-callback" element={<AuthenticateWithRedirectCallback signInForceRedirectUrl="/resume-templates" signUpForceRedirectUrl="/resume-templates" />} />

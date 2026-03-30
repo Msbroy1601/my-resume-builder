@@ -86,7 +86,7 @@ export default function Home() {
             <Link to="/resume-templates" className="hover:text-[#1a2744] transition-colors">Resumes</Link>
             <Link to="/cv-templates" className="hover:text-[#1a2744] transition-colors">CVs</Link>
             <Link to="/cover-letter-templates" className="hover:text-[#1a2744] transition-colors">Cover Letters</Link>
-            <a href="#how-it-works" className="hover:text-[#1a2744] transition-colors">How it works</a>
+            <Link to="/pricing" className="hover:text-[#1a2744] transition-colors">Pricing</Link>
             <a href="#faq" className="hover:text-[#1a2744] transition-colors">FAQ</a>
           </nav>
 
@@ -100,9 +100,11 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link to="/login" className="hidden sm:block px-4 py-2 text-sm font-semibold text-gray-600 hover:text-[#1a2744] transition">Log In</Link>
-                <Link to="/signup" className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition shadow-sm">
-                  Get Started Free
+                <Link to="/login" className="hidden sm:block px-4 py-2 text-sm font-semibold text-gray-600 hover:text-[#1a2744] transition-colors border border-gray-200 rounded-lg hover:border-[#1a2744]">
+                  Log In
+                </Link>
+                <Link to="/signup" className="px-5 py-2 bg-[#f0a04b] text-[#1a2744] text-sm font-bold rounded-lg hover:bg-[#e8943e] transition shadow-sm">
+                  Get Started Free →
                 </Link>
               </>
             )}
@@ -557,6 +559,72 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── BLOG / RESOURCES ── */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <h2 className="text-3xl font-extrabold text-[#1a2744] mb-2">Career Advice &amp; Resources</h2>
+              <p className="text-gray-500">Expert guides to help you land your next role faster.</p>
+            </div>
+            <Link to="/resume-tips" className="hidden md:block text-sm font-semibold text-[#1a2744] hover:underline">
+              View all articles →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                tag: 'Resume Guide',
+                tagColor: 'bg-blue-100 text-blue-700',
+                title: 'How to Write a Resume That Gets Callbacks in 2025',
+                body: 'ATS tips, bullet point formulas, and formatting advice written specifically for the Indian job market.',
+                readTime: '8 min read',
+                href: '/resume-tips',
+                emoji: '📄',
+                bg: 'from-blue-50 to-indigo-50',
+              },
+              {
+                tag: 'Cover Letter',
+                tagColor: 'bg-rose-100 text-rose-700',
+                title: 'How to Write a Cover Letter That Actually Gets Read',
+                body: 'Structure, tone, openers, and closers — a practical guide from blank page to final draft.',
+                readTime: '6 min read',
+                href: '/cover-letter-tips',
+                emoji: '✉️',
+                bg: 'from-rose-50 to-orange-50',
+              },
+              {
+                tag: 'CV vs Resume',
+                tagColor: 'bg-purple-100 text-purple-700',
+                title: 'CV vs Resume: Which One Should You Send?',
+                body: 'UK, India, US — the rules differ. We break down exactly which document to use and when.',
+                readTime: '4 min read',
+                href: '/cv-templates',
+                emoji: '📋',
+                bg: 'from-purple-50 to-violet-50',
+              },
+            ].map(article => (
+              <Link key={article.title} to={article.href}
+                className={`group block rounded-2xl bg-gradient-to-br ${article.bg} border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300`}>
+                <div className="p-6">
+                  <div className="text-3xl mb-4">{article.emoji}</div>
+                  <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-full mb-3 ${article.tagColor}`}>{article.tag}</span>
+                  <h3 className="text-base font-bold text-gray-900 mb-2 group-hover:text-[#1a2744] transition leading-snug">{article.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed mb-4">{article.body}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">{article.readTime}</span>
+                    <span className="text-xs font-semibold text-[#1a2744] group-hover:gap-2 flex items-center gap-1 transition-all">Read →</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-8 text-center md:hidden">
+            <Link to="/resume-tips" className="text-sm font-semibold text-[#1a2744] hover:underline">View all articles →</Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
       <footer className="bg-gray-950 text-white py-16 px-6">
         <div className="max-w-6xl mx-auto">
@@ -582,6 +650,7 @@ export default function Home() {
                 <li><Link to="/resume-templates" className="hover:text-white transition">Templates</Link></li>
                 <li><Link to={ctaLink} className="hover:text-white transition">Resume Builder</Link></li>
                 <li><Link to="/cover-letter-tips" className="hover:text-white transition">Cover Letter</Link></li>
+                <li><Link to="/pricing" className="hover:text-white transition">Pricing</Link></li>
                 <li><Link to="/dashboard" className="hover:text-white transition">Dashboard</Link></li>
               </ul>
             </div>

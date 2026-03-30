@@ -899,9 +899,21 @@ function Builder() {
   const [isDownloading, setIsDownloading] = useState(false)
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   const [suggestedSkills, setSuggestedSkills] = useState([])
-  const [showSkillSuggestions, setShowSkillSuggestions] = useState(false)
+  const [showSkillSuggestions, setShowSkillSuggestions] = useState(true)
   const [skillSearch, setSkillSearch] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+
+  // Editing indices for Education, Projects, Certifications
+  const [editingEducIdx, setEditingEducIdx] = useState(null)
+  const [editingProjIdx, setEditingProjIdx] = useState(null)
+  const [editingCertIdx, setEditingCertIdx] = useState(null)
+
+  // Combined ATS + Job Match modal
+  const [showScoreMatch, setShowScoreMatch] = useState(false)
+  const [scoreMatchTab, setScoreMatchTab] = useState('ats')
+
+  // Pre-download Tune-Up upsell
+  const [showTuneUpPreDownload, setShowTuneUpPreDownload] = useState(false)
 
   // Lazy-load role suggestions on mount
   useEffect(() =>{
@@ -1873,12 +1885,27 @@ function Builder() {
 
   const addEducation = () =>{
     if (!validateEducation()) return
-    setEducationList([...educationList, currentEducation])
+    if (editingEducIdx !== null) {
+      const updated = [...educationList]
+      updated[editingEducIdx] = currentEducation
+      setEducationList(updated)
+      setEditingEducIdx(null)
+    } else {
+      setEducationList([...educationList, currentEducation])
+    }
     setCurrentEducation({ school: '', degree: '', fieldOfStudy: '', schoolLocation: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '', descBullets: '' })
     setEduErrors({}); setEduDateError('')
   }
 
-  const deleteEducation = (index) =>setEducationList(educationList.filter((_, i) =>i !== index))
+  const startEditEducation = (i) =>{
+    setCurrentEducation({ ...educationList[i] })
+    setEditingEducIdx(i)
+    setEduErrors({}); setEduDateError('')
+    const el = [...document.querySelectorAll('h2')].find(h =>h.textContent.includes('Education'))
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const deleteEducation = (index) =>{ if (editingEducIdx === index) setEditingEducIdx(null); setEducationList(educationList.filter((_, i) =>i !== index)) }
 
   // Generate summary using Claude API
   const generateSummary = async () =>{
@@ -1934,6 +1961,9 @@ function Builder() {
     return [...suggested].filter(s =>!currentSkillNames.includes(s.toLowerCase()))
   }
 
+  // Auto-refresh skill suggestions when roles or current skills change
+  useEffect(() =>{ setSuggestedSkills(getSkillSuggestions()) }, [workExperiences, skillsList]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const addSkillFromSuggestion = (skill) =>{
     if (!skillsList.map(s =>s.name.toLowerCase()).includes(skill.toLowerCase())) {
       setSkillsList([...skillsList, { name: skill, level: 3 }])
@@ -1953,11 +1983,22 @@ function Builder() {
   // Certifications
   const addCertification = () =>{
     if (!currentCert.name.trim()) return
-    if (certifications.some(c =>c.name.toLowerCase() === currentCert.name.toLowerCase())) return
-    setCertifications([...certifications, currentCert])
+    if (editingCertIdx !== null) {
+      const updated = [...certifications]
+      updated[editingCertIdx] = currentCert
+      setCertifications(updated)
+      setEditingCertIdx(null)
+    } else {
+      if (certifications.some(c =>c.name.toLowerCase() === currentCert.name.toLowerCase())) return
+      setCertifications([...certifications, currentCert])
+    }
     setCurrentCert({ name: '', issuer: '', year: '' })
   }
-  const deleteCertification = (i) =>setCertifications(certifications.filter((_, idx) =>idx !== i))
+  const startEditCertification = (i) =>{
+    setCurrentCert({ ...certifications[i] })
+    setEditingCertIdx(i)
+  }
+  const deleteCertification = (i) =>{ if (editingCertIdx === i) setEditingCertIdx(null); setCertifications(certifications.filter((_, idx) =>idx !== i)) }
 
   // Languages
   const addLanguage = () =>{
@@ -1971,17 +2012,30 @@ function Builder() {
   // Projects
   const addProject = () =>{
     if (!currentProject.name.trim()) return
-    setProjects([...projects, currentProject])
+    if (editingProjIdx !== null) {
+      const updated = [...projects]
+      updated[editingProjIdx] = currentProject
+      setProjects(updated)
+      setEditingProjIdx(null)
+    } else {
+      setProjects([...projects, currentProject])
+    }
     setCurrentProject({ name: '', description: '', link: '' })
   }
-  const deleteProject = (index) =>setProjects(projects.filter((_, i) =>i !== index))
+  const startEditProject = (i) =>{
+    setCurrentProject({ ...projects[i] })
+    setEditingProjIdx(i)
+    const el = [...document.querySelectorAll('h2')].find(h =>h.textContent.includes('Projects'))
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  const deleteProject = (index) =>{ if (editingProjIdx === index) setEditingProjIdx(null); setProjects(projects.filter((_, i) =>i !== index)) }
 
   const applySuggestion = (suggestion, field) =>{
     const current = currentWork[field]
     setCurrentWork({ ...currentWork, [field]: current ? current + '\n• ' + suggestion : '• ' + suggestion })
   }
 
-  const handleDownloadClick = () =>setShowPaymentModal(true)
+  const handleDownloadClick = () =>setShowTuneUpPreDownload(true)
 
   const triggerDownload = () =>{
     setIsDownloading(true)
@@ -2380,12 +2434,10 @@ const BlueSidebarTemplate = () =>(
             <div className="flex items-center gap-2 flex-wrap">
               <button onClick={() =>{ setShowImport(true); setImportMsg(null); setImportPreview(null) }} className={btnGhost}>Import CV</button>
               <button onClick={() =>setShowTemplateSwitcher(true)} className={btnGhost}>Switch Template</button>
-              <button onClick={handleATSCheck} className={btnGhost}>ATS Check</button>
-              <button onClick={handleJobMatch} className={btnGhost}>Job Match</button>
+              <button onClick={() =>{ setScoreMatchTab('ats'); setAtsData(runATSCheck()); setShowScoreMatch(true) }} className={btnGhost}>Score & Match</button>
               <button onClick={handleOpenCloudPanel} className={btnGhost}>Cloud Saves</button>
               <button onClick={() =>navigate('/dashboard')} className={btnGhost}>Dashboard</button>
               <button onClick={() =>navigate('/cover-letter')} className={btnGhost}>Cover Letter</button>
-              <button onClick={() =>{ setShowTuneUp(true); setTuneUpMsg(null) }} className={btnGhost}>Tune-Up</button>
               <button onClick={handleSave} className={btnPrimary}>Save</button>
               <button onClick={handleClearAll} className={btnDanger}>Clear</button>
               <button onClick={() =>{ if (window.confirm('Log out?')) { signOut(); navigate('/') } }} className={btnGhost}>Log Out</button>
@@ -2698,11 +2750,13 @@ const BlueSidebarTemplate = () =>(
                   <p className="text-xs text-gray-400 mt-1">Add notable achievements, relevant coursework, or activities. One per line.</p>
                 </div>
 
-                <button onClick={addEducation} className="w-full bg-[#1a2744] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#152235] transition shadow-md"> + Add Education
-</button> {educationList.length >0 && (
+                <button onClick={addEducation} className={`w-full py-3 px-4 rounded-lg font-semibold transition shadow-md text-white ${editingEducIdx !== null ? 'bg-green-600 hover:bg-green-700' : 'bg-[#1a2744] hover:bg-[#152235]'}`}> {editingEducIdx !== null ? '✓ Save Changes' : '+ Add Education'}
+</button> {editingEducIdx !== null && (<button onClick={() =>{ setEditingEducIdx(null); setCurrentEducation({ school:'',degree:'',fieldOfStudy:'',schoolLocation:'',startMonth:'',startYear:'',endMonth:'',endYear:'',isPresent:false,score:'',descBullets:'' }); setEduErrors({}); setEduDateError('') }} className="w-full mt-1.5 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel Edit</button>)}
+{educationList.length >0 && (
                   <div className="mt-4 space-y-3"> <h3 className="text-sm font-semibold text-gray-700">Added ({educationList.length}):</h3> {educationList.map((edu, i) =>(
-                      <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-start"> <div> <p className="font-semibold text-gray-900">{edu.school}{edu.schoolLocation ? ` · ${edu.schoolLocation}` : ''}</p> <p className="text-sm text-gray-600">{edu.degree}{edu.fieldOfStudy ? ` — ${edu.fieldOfStudy}` : ''}</p> <p className="text-xs text-gray-500">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? ` · ${edu.score}` : ''}</p>
-</div> <button onClick={() =>deleteEducation(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition">Delete</button>
+                      <div key={i} className={`p-4 rounded-lg border flex justify-between items-start ${editingEducIdx === i ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-100'}`}> <div> <p className="font-semibold text-gray-900">{edu.school}{edu.schoolLocation ? ` · ${edu.schoolLocation}` : ''}</p> <p className="text-sm text-gray-600">{edu.degree}{edu.fieldOfStudy ? ` — ${edu.fieldOfStudy}` : ''}</p> <p className="text-xs text-gray-500">{formatDate(edu.startMonth, edu.startYear)} - {formatDate(edu.endMonth, edu.endYear, edu.isPresent)}{edu.score ? ` · ${edu.score}` : ''}</p>
+</div> <div className="flex gap-2 ml-3 flex-shrink-0"> <button onClick={() =>startEditEducation(i)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm hover:bg-blue-50 px-3 py-1 rounded transition">Edit</button> <button onClick={() =>deleteEducation(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition">Delete</button>
+</div>
 </div> ))}
 </div> )}
 </div>
@@ -2733,13 +2787,15 @@ const BlueSidebarTemplate = () =>(
 </div> <button
                   onClick={addProject}
                   disabled={!currentProject.name.trim()}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition shadow-md text-white ${currentProject.name.trim() ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700' : 'bg-gray-300 cursor-not-allowed'}`}
-                > + Add Project
-</button> {projects.length >0 && (
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition shadow-md text-white ${!currentProject.name.trim() ? 'bg-gray-300 cursor-not-allowed' : editingProjIdx !== null ? 'bg-green-600 hover:bg-green-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}
+                > {editingProjIdx !== null ? '✓ Save Changes' : '+ Add Project'}
+</button> {editingProjIdx !== null && (<button onClick={() =>{ setEditingProjIdx(null); setCurrentProject({ name:'',description:'',link:'' }) }} className="w-full mt-1.5 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel Edit</button>)}
+{projects.length >0 && (
                   <div className="mt-4 space-y-3"> <h3 className="text-sm font-semibold text-gray-700">Added ({projects.length}):</h3> {projects.map((proj, i) =>(
-                      <div key={i} className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-100 flex justify-between items-start"> <div> <p className="font-semibold text-gray-900">{proj.name}</p> {proj.description && <p className="text-sm text-gray-600 mt-1">{proj.description}</p>}
+                      <div key={i} className={`p-4 rounded-lg border flex justify-between items-start ${editingProjIdx === i ? 'bg-blue-50 border-blue-300' : 'bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-100'}`}> <div> <p className="font-semibold text-gray-900">{proj.name}</p> {proj.description && <p className="text-sm text-gray-600 mt-1">{proj.description}</p>}
                           {proj.link && <p className="text-xs text-blue-500 mt-1 truncate"><a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{proj.link}</a></p>}
-</div> <button onClick={() =>deleteProject(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition ml-3 flex-shrink-0">Delete</button>
+</div> <div className="flex gap-2 ml-3 flex-shrink-0"> <button onClick={() =>startEditProject(i)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm hover:bg-blue-50 px-3 py-1 rounded transition">Edit</button> <button onClick={() =>deleteProject(i)} className="text-red-600 hover:text-red-800 font-semibold text-sm hover:bg-red-50 px-3 py-1 rounded transition">Delete</button>
+</div>
 </div> ))}
 </div> )}
 </div>
@@ -2758,16 +2814,22 @@ const BlueSidebarTemplate = () =>(
                     className={`px-4 py-3 rounded-lg font-semibold transition text-white mb-6 ${currentSkillInput.trim() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'}`}> + Add
 </button>
 </div> {/* Skill Suggestions */}
-                <button onClick={() =>{ setShowSkillSuggestions(!showSkillSuggestions); setSuggestedSkills(getSkillSuggestions()) }}
-                  className="text-sm text-purple-600 font-semibold hover:text-purple-800 flex items-center gap-1 transition"> {showSkillSuggestions ? 'Hide suggestions' : 'Suggest skills based on your roles'}
-</button> {showSkillSuggestions && (
-                  <div className="p-4 bg-purple-50 rounded-xl border border-purple-200"> <p className="text-sm font-semibold text-purple-800 mb-2">Click any skill to add it (default level 3):</p> <input type="text" value={skillSearch} onChange={e =>setSkillSearch(e.target.value)}
-                      placeholder="Search suggestions..." className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-purple-400" /> <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto pr-1"> {suggestedSkills.filter(s =>s.toLowerCase().includes(skillSearch.toLowerCase())).map((skill, i) =>(
-                        <button key={i} onClick={() =>addSkillFromSuggestion(skill)}
-                          className="px-3 py-1.5 bg-white border border-purple-300 text-purple-800 rounded-full text-sm hover:bg-purple-600 hover:text-white hover:border-purple-600 transition font-medium"> + {skill}
-</button> ))}
-</div>
-</div> )}
+                {suggestedSkills.length > 0 && (
+                  <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-purple-800">Suggested skills — click to add:</p>
+                      <button onClick={() =>setShowSkillSuggestions(!showSkillSuggestions)} className="text-xs text-purple-500 hover:text-purple-700 font-medium">{showSkillSuggestions ? 'Hide' : 'Show'}</button>
+                    </div>
+                    {showSkillSuggestions && (<>
+                      <input type="text" value={skillSearch} onChange={e =>setSkillSearch(e.target.value)}
+                        placeholder="Filter suggestions..." className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                      <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto pr-1"> {suggestedSkills.filter(s =>s.toLowerCase().includes(skillSearch.toLowerCase())).map((skill, i) =>(
+                          <button key={i} onClick={() =>addSkillFromSuggestion(skill)}
+                            className="px-3 py-1.5 bg-white border border-purple-300 text-purple-800 rounded-full text-sm hover:bg-purple-600 hover:text-white hover:border-purple-600 transition font-medium">+ {skill}</button> ))}
+                      </div>
+                    </>)}
+                  </div>
+                )}
 
                 {/* Added skills with level editing */}
                 {skillsList.length >0 && (
@@ -2799,11 +2861,13 @@ const BlueSidebarTemplate = () =>(
 </select>
 </div>
 </div> <button onClick={addCertification} disabled={!currentCert.name.trim()}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition shadow-md text-white ${currentCert.name.trim() ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700' : 'bg-gray-300 cursor-not-allowed'}`}> + Add Certification
-</button> {certifications.length >0 && (
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition shadow-md text-white ${!currentCert.name.trim() ? 'bg-gray-300 cursor-not-allowed' : editingCertIdx !== null ? 'bg-green-600 hover:bg-green-700' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'}`}> {editingCertIdx !== null ? '✓ Save Changes' : '+ Add Certification'}
+</button> {editingCertIdx !== null && (<button onClick={() =>{ setEditingCertIdx(null); setCurrentCert({ name:'',issuer:'',year:'' }) }} className="w-full mt-1.5 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel Edit</button>)}
+{certifications.length >0 && (
                   <div className="mt-2 space-y-2"> {certifications.map((cert, i) =>(
-                      <div key={i} className="flex justify-between items-center p-3 bg-yellow-50 border border-yellow-100 rounded-lg"> <div> <p className="font-semibold text-gray-900 text-sm">{cert.name}</p> {cert.issuer && <p className="text-xs text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}
-</div> <button onClick={() =>deleteCertification(i)} className="text-red-500 hover:text-red-700 text-sm font-semibold ml-3">Delete</button>
+                      <div key={i} className={`flex justify-between items-center p-3 rounded-lg border ${editingCertIdx === i ? 'bg-blue-50 border-blue-300' : 'bg-yellow-50 border-yellow-100'}`}> <div> <p className="font-semibold text-gray-900 text-sm">{cert.name}</p> {cert.issuer && <p className="text-xs text-gray-500">{cert.issuer}{cert.year ? ` · ${cert.year}` : ''}</p>}
+</div> <div className="flex gap-2 ml-3 flex-shrink-0"> <button onClick={() =>startEditCertification(i)} className="text-blue-500 hover:text-blue-700 text-sm font-semibold">Edit</button> <button onClick={() =>deleteCertification(i)} className="text-red-500 hover:text-red-700 text-sm font-semibold">Delete</button>
+</div>
 </div> ))}
 </div> )}
 </div>
@@ -3316,6 +3380,148 @@ const BlueSidebarTemplate = () =>(
 </div>
 </div>
 </div> )}
+
+      {/*  PRE-DOWNLOAD TUNE-UP UPSELL MODAL  */}
+      {showTuneUpPreDownload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.65)'}} onClick={() =>setShowTuneUpPreDownload(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e =>e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-[#8b1a2e] to-[#b02540] px-6 py-5 text-white relative">
+              <button onClick={() =>setShowTuneUpPreDownload(false)} className="absolute top-4 right-4 text-white/60 hover:text-white text-xl font-bold">×</button>
+              <p className="text-xs uppercase tracking-widest text-red-200 font-semibold mb-1">Before you download</p>
+              <h2 className="text-xl font-bold">Want expert eyes on this CV?</h2>
+              <p className="text-red-200 text-sm mt-1">Get a professional review before sending it out</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <ul className="space-y-2.5">
+                {[
+                  { icon: '🔍', title: 'Line-by-line feedback', desc: 'Personalised to your target role' },
+                  { icon: '🎯', title: 'ATS keyword optimisation', desc: 'Pass automated screening filters' },
+                  { icon: '⚡', title: '24-hour turnaround', desc: 'Delivered straight to your inbox' },
+                ].map(item =>(
+                  <li key={item.title} className="flex items-start gap-3">
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                    <div><p className="text-sm font-semibold text-gray-900">{item.title}</p><p className="text-xs text-gray-500">{item.desc}</p></div>
+                  </li>
+                ))}
+              </ul>
+              <div className="bg-rose-50 rounded-xl p-3 flex items-center justify-between border border-rose-100">
+                <div><p className="text-xs text-rose-500 font-medium uppercase tracking-wide">One-time</p><p className="text-2xl font-bold text-rose-700">₹499</p></div>
+                <div className="text-right text-xs text-rose-400"><p>No subscription</p><p>UPI / Cards / Net banking</p></div>
+              </div>
+              <button
+                onClick={() =>{ setShowTuneUpPreDownload(false); setTuneUpMsg(null); setShowTuneUp(true) }}
+                className="w-full py-3.5 bg-[#8b1a2e] text-white rounded-xl font-bold hover:bg-[#7a1727] transition text-sm"
+              >Get My CV Reviewed — ₹499</button>
+              <button
+                onClick={() =>{ setShowTuneUpPreDownload(false); setShowPaymentModal(true) }}
+                className="w-full py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm hover:bg-gray-50 transition font-medium"
+              >Skip — just download free</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/*  COMBINED SCORE & MATCH MODAL (ATS + Job Match tabs)  */}
+      {showScoreMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.6)'}} onClick={() =>setShowScoreMatch(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col" onClick={e =>e.stopPropagation()}>
+            {/* Header + Tabs */}
+            <div className="border-b border-gray-100">
+              <div className="flex items-center justify-between px-6 pt-5 pb-0">
+                <h2 className="text-xl font-bold text-gray-900">Score & Match</h2>
+                <button onClick={() =>setShowScoreMatch(false)} className="text-gray-400 hover:text-gray-700 text-2xl font-light leading-none">×</button>
+              </div>
+              <div className="flex gap-0 px-6 mt-4">
+                <button
+                  onClick={() =>{ setScoreMatchTab('ats'); setAtsData(runATSCheck()) }}
+                  className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition ${scoreMatchTab === 'ats' ? 'border-[#1a2744] text-[#1a2744]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                >ATS Compatibility</button>
+                <button
+                  onClick={() =>{ setScoreMatchTab('match'); setJobMatchResult(null) }}
+                  className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition ${scoreMatchTab === 'match' ? 'border-violet-600 text-violet-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                >Job Match</button>
+              </div>
+            </div>
+
+            {/* ATS Tab */}
+            {scoreMatchTab === 'ats' && atsData && (() =>{
+              const { checks, score } = atsData
+              const failed = checks.filter(c =>!c.pass)
+              const passed = checks.filter(c =>c.pass)
+              const scoreColor = score >= 80 ? '#16a34a' : score >= 55 ? '#d97706' : '#dc2626'
+              const scoreBg = score >= 80 ? '#f0fdf4' : score >= 55 ? '#fffbeb' : '#fef2f2'
+              const scoreLabel = score >= 80 ? 'Great shape!' : score >= 55 ? 'Needs work' : 'Needs attention'
+              const circumference = 2 * Math.PI * 40
+              const strokeDash = circumference - (score / 100) * circumference
+              return (
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <div className="flex flex-col items-center py-5" style={{backgroundColor:scoreBg}}>
+                    <svg width="100" height="100" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                      <circle cx="50" cy="50" r="40" fill="none" stroke={scoreColor} strokeWidth="10" strokeDasharray={circumference} strokeDashoffset={strokeDash} strokeLinecap="round" transform="rotate(-90 50 50)" />
+                      <text x="50" y="45" textAnchor="middle" fontSize="20" fontWeight="bold" fill={scoreColor}>{score}</text>
+                      <text x="50" y="60" textAnchor="middle" fontSize="10" fill="#6b7280">/ 100</text>
+                    </svg>
+                    <p className="text-sm font-semibold mt-1" style={{color:scoreColor}}>{scoreLabel}</p>
+                    <p className="text-xs text-gray-500">{passed.length} of {checks.length} checks passed</p>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                    {failed.length > 0 && (<div><h3 className="text-xs font-bold uppercase tracking-wide text-red-600 mb-2">Issues to Fix ({failed.length})</h3><div className="space-y-2">{failed.map(c =>(<div key={c.id} className="flex gap-3 p-3 bg-red-50 rounded-xl border border-red-100"><div><p className="text-sm font-semibold text-gray-800">{c.label}</p><p className="text-xs text-gray-500 mt-0.5">{c.tip}</p></div></div>))}</div></div>)}
+                    {passed.length > 0 && (<div><h3 className="text-xs font-bold uppercase tracking-wide text-emerald-600 mb-2">Passing ({passed.length})</h3><div className="space-y-1.5">{passed.map(c =>(<div key={c.id} className="flex gap-3 p-2.5 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-sm text-gray-700">{c.label}</p></div>))}</div></div>)}
+                  </div>
+                  <div className="px-6 py-4 border-t border-gray-100">
+                    <button onClick={() =>setAtsData(runATSCheck())} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition text-sm mb-2">Re-run Check</button>
+                    <button onClick={() =>setShowScoreMatch(false)} className="w-full py-2 text-gray-400 text-sm hover:text-gray-600">Close</button>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Job Match Tab */}
+            {scoreMatchTab === 'match' && (
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Paste the Job Description</label>
+                    <textarea value={jobMatchJD} onChange={e =>{ setJobMatchJD(e.target.value); setJobMatchResult(null) }}
+                      placeholder="Copy and paste the full job description here — the more text, the more accurate the match..."
+                      rows={6} className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none" />
+                    <button onClick={() =>setJobMatchResult(runJobMatch(jobMatchJD))} disabled={!jobMatchJD.trim()}
+                      className="mt-2 w-full py-2.5 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition text-sm disabled:opacity-40 disabled:cursor-not-allowed">Analyse Match →</button>
+                  </div>
+                  {jobMatchResult && (() =>{
+                    const { score, matched, missing, total } = jobMatchResult
+                    const scoreColor = score >= 70 ? '#7c3aed' : score >= 45 ? '#d97706' : '#dc2626'
+                    const scoreBg = score >= 70 ? '#f5f3ff' : score >= 45 ? '#fffbeb' : '#fef2f2'
+                    const scoreLabel = score >= 70 ? 'Strong match!' : score >= 45 ? 'Partial match' : 'Low match'
+                    const circumference = 2 * Math.PI * 38
+                    const strokeDash = circumference - (score / 100) * circumference
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex flex-col items-center py-4 rounded-2xl" style={{backgroundColor:scoreBg}}>
+                          <svg width="96" height="96" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                            <circle cx="50" cy="50" r="38" fill="none" stroke={scoreColor} strokeWidth="10" strokeDasharray={circumference} strokeDashoffset={strokeDash} strokeLinecap="round" transform="rotate(-90 50 50)" />
+                            <text x="50" y="46" textAnchor="middle" fontSize="20" fontWeight="bold" fill={scoreColor}>{score}%</text>
+                            <text x="50" y="61" textAnchor="middle" fontSize="9" fill="#6b7280">match</text>
+                          </svg>
+                          <p className="text-sm font-bold mt-1" style={{color:scoreColor}}>{scoreLabel}</p>
+                          <p className="text-xs text-gray-500">{matched.length} of {total} keywords found</p>
+                        </div>
+                        {missing.length > 0 && (<div><h3 className="text-xs font-bold uppercase tracking-wide text-orange-600 mb-2">Keywords to add ({missing.length})</h3><div className="flex flex-wrap gap-2">{missing.map(kw =>(<span key={kw} className="px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-full text-xs font-medium">{kw}</span>))}</div></div>)}
+                        {matched.length > 0 && (<div><h3 className="text-xs font-bold uppercase tracking-wide text-violet-600 mb-2">Matched ({matched.length})</h3><div className="flex flex-wrap gap-2">{matched.map(kw =>(<span key={kw} className="px-2.5 py-1 bg-violet-50 text-violet-700 border border-violet-200 rounded-full text-xs font-medium">{kw}</span>))}</div></div>)}
+                      </div>
+                    )
+                  })()}
+                </div>
+                <div className="px-6 py-4 border-t border-gray-100">
+                  <button onClick={() =>setShowScoreMatch(false)} className="w-full py-2 text-gray-400 text-sm hover:text-gray-600">Close</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/*  PRO UPGRADE MODAL  */}
       {showUpgrade && (
