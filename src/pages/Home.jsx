@@ -58,7 +58,7 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState('All')
   const [heroTemplate, setHeroTemplate] = useState('modern')
 
-  const ctaLink = isSignedIn ? '/templates' : '/signup'
+  const ctaLink = isSignedIn ? '/resume-templates' : '/signup'
 
   const filteredTemplates = activeFilter === 'All'
     ? ALL_TEMPLATES
@@ -83,10 +83,10 @@ export default function Home() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="#templates" className="hover:text-[#1a2744] transition-colors">Templates</a>
+            <Link to="/resume-templates" className="hover:text-[#1a2744] transition-colors">Resumes</Link>
+            <Link to="/cv-templates" className="hover:text-[#1a2744] transition-colors">CVs</Link>
+            <Link to="/cover-letter-templates" className="hover:text-[#1a2744] transition-colors">Cover Letters</Link>
             <a href="#how-it-works" className="hover:text-[#1a2744] transition-colors">How it works</a>
-            <Link to="/resume-tips" className="hover:text-[#1a2744] transition-colors">Resume Tips</Link>
-            <Link to="/cover-letter-tips" className="hover:text-[#1a2744] transition-colors">Cover Letter</Link>
             <a href="#faq" className="hover:text-[#1a2744] transition-colors">FAQ</a>
           </nav>
 
@@ -94,7 +94,7 @@ export default function Home() {
             {isSignedIn ? (
               <>
                 <Link to="/dashboard" className="hidden sm:block px-4 py-2 text-sm font-semibold text-gray-600 hover:text-[#1a2744] transition">Dashboard</Link>
-                <Link to="/templates" className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition shadow-sm">
+                <Link to="/resume-templates" className="px-5 py-2 bg-[#1a2744] text-white text-sm font-semibold rounded-lg hover:bg-[#152235] transition shadow-sm">
                   + New Resume
                 </Link>
               </>
@@ -231,82 +231,120 @@ export default function Home() {
       </div>
 
       {/* ── TEMPLATES SECTION ── */}
+      {/* ── 3 JOURNEYS ── */}
       <section id="templates" className="py-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-4xl font-extrabold text-[#1a2744] mb-3">Choose Your Template</h2>
-            <p className="text-gray-500 text-lg">17 professionally designed templates — click any to preview in full</p>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-extrabold text-[#1a2744] mb-3">Three journeys. One platform.</h2>
+            <p className="text-gray-500 text-lg">Resume, CV, or Cover Letter — we have 10+ templates for each, designed to get you hired.</p>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex gap-2 justify-center flex-wrap mb-8">
-            {FILTER_TABS.map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveFilter(tab)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition border ${
-                  activeFilter === tab
-                    ? 'bg-[#1a2744] text-white border-[#1a2744] shadow-md'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#1a2744] hover:text-[#1a2744]'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Template grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {filteredTemplates.map(t => (
-              <Link
-                key={t.id}
-                to={ctaLink}
-                className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="relative overflow-hidden" style={{ height: '200px', background: '#f8f9fa' }}>
-                  <img
-                    src={`/template-previews/${t.id}.jpg`}
-                    alt={t.name}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-[#1a2744]/0 group-hover:bg-[#1a2744]/50 transition-all duration-300 flex items-center justify-center">
-                    <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white text-[#1a2744] text-xs font-bold px-4 py-2 rounded-full shadow-lg">
-                      Use Template
-                    </span>
+          {/* Journey cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {/* Resume */}
+            <Link to="/resume-templates" className="group relative bg-gradient-to-br from-[#1a2744] to-[#2d4a8a] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+              <div className="p-8">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl mb-5">📄</div>
+                <h3 className="text-2xl font-extrabold text-white mb-2">Resume Templates</h3>
+                <p className="text-blue-200 text-sm leading-relaxed mb-5">10 clean, ATS-optimised designs for US and Canada job applications. 1–2 pages, role-focused.</p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {['Modern', 'Classic', 'Minimal', 'Tech'].map(tag => (
+                    <span key={tag} className="px-3 py-1 bg-white/10 text-white text-xs font-semibold rounded-full border border-white/20">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-[#f0a04b] font-bold text-sm group-hover:gap-3 transition-all">
+                  Browse 10 templates <span>→</span>
+                </div>
+              </div>
+              {/* Mini template previews */}
+              <div className="flex gap-2 px-8 pb-6 overflow-hidden">
+                {['modern', 'minimal', 'tech'].map(id => (
+                  <div key={id} className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 opacity-70 group-hover:opacity-90 transition border border-white/20">
+                    <img src={`/template-previews/${id}.jpg`} alt={id} className="w-full h-full object-cover object-top"/>
                   </div>
-                  {t.badge && (
-                    <div className="absolute top-2 left-2">
-                      <span className="bg-[#1a2744] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
-                        {t.badge}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="px-3 py-2.5">
-                  <p className="text-xs font-bold text-gray-800">{t.name}</p>
-                </div>
-              </Link>
-            ))}
+                ))}
+                <div className="w-16 h-20 rounded-lg flex-shrink-0 bg-white/10 border border-white/20 flex items-center justify-center text-white/60 text-xs font-bold">+7</div>
+              </div>
+            </Link>
 
-            {/* View all card */}
-            <Link
-              to="/templates"
-              className="group bg-gradient-to-br from-[#1a2744] to-[#2d4a8a] rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-2 transition-all hover:shadow-xl hover:-translate-y-1 duration-300"
-              style={{ minHeight: '240px' }}
-            >
-              <div className="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center text-white text-2xl font-bold group-hover:border-white/60 transition">+</div>
-              <p className="text-white text-sm font-bold">View All 17</p>
-              <p className="text-blue-300 text-xs">Templates</p>
+            {/* CV */}
+            <Link to="/cv-templates" className="group relative bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+              <div className="p-8">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl mb-5">📋</div>
+                <h3 className="text-2xl font-extrabold text-white mb-2">CV Templates</h3>
+                <p className="text-purple-200 text-sm leading-relaxed mb-5">10 comprehensive designs for UK, India, Europe and academic applications. Detailed, multi-page friendly.</p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {['Classic Serif', 'Gold Header', 'Elegant', 'Navy'].map(tag => (
+                    <span key={tag} className="px-3 py-1 bg-white/10 text-white text-xs font-semibold rounded-full border border-white/20">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-[#f0a04b] font-bold text-sm group-hover:gap-3 transition-all">
+                  Browse 10 templates <span>→</span>
+                </div>
+              </div>
+              <div className="flex gap-2 px-8 pb-6 overflow-hidden">
+                {['classicserif', 'goldheader', 'navy'].map(id => (
+                  <div key={id} className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 opacity-70 group-hover:opacity-90 transition border border-white/20">
+                    <img src={`/template-previews/${id}.jpg`} alt={id} className="w-full h-full object-cover object-top"/>
+                  </div>
+                ))}
+                <div className="w-16 h-20 rounded-lg flex-shrink-0 bg-white/10 border border-white/20 flex items-center justify-center text-white/60 text-xs font-bold">+7</div>
+              </div>
+            </Link>
+
+            {/* Cover Letter */}
+            <Link to="/cover-letter-templates" className="group relative bg-gradient-to-br from-[#7f1d1d] to-[#8b1a2e] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+              <div className="p-8">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl mb-5">✉️</div>
+                <h3 className="text-2xl font-extrabold text-white mb-2">Cover Letter Templates</h3>
+                <p className="text-red-200 text-sm leading-relaxed mb-5">10 distinct styles from formal to bold. Auto-generated from your resume data in seconds.</p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {['Formal', 'Modern', 'Executive', 'Creative'].map(tag => (
+                    <span key={tag} className="px-3 py-1 bg-white/10 text-white text-xs font-semibold rounded-full border border-white/20">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-[#f0a04b] font-bold text-sm group-hover:gap-3 transition-all">
+                  Browse 10 templates <span>→</span>
+                </div>
+              </div>
+              {/* Cover letter style swatches */}
+              <div className="flex gap-2 px-8 pb-6">
+                {['#1a2744','#7c3aed','#0f1c38','#e85d4a','#d97706'].map(color => (
+                  <div key={color} className="w-8 h-20 rounded-lg flex-shrink-0 opacity-70 group-hover:opacity-90 transition border border-white/20 flex flex-col overflow-hidden">
+                    <div className="h-8 flex-shrink-0" style={{ backgroundColor: color }} />
+                    <div className="flex-1 bg-white/10 p-1 space-y-0.5">
+                      {[...Array(4)].map((_,i) => <div key={i} className="h-0.5 bg-white/30 rounded" />)}
+                    </div>
+                  </div>
+                ))}
+                <div className="w-8 h-20 rounded-lg flex-shrink-0 bg-white/10 border border-white/20 flex items-center justify-center text-white/60 text-xs font-bold">+5</div>
+              </div>
             </Link>
           </div>
 
-          <div className="text-center mt-8">
-            <Link
-              to="/templates"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1a2744] text-white font-semibold rounded-xl hover:bg-[#152235] transition text-sm"
-            >
-              Browse All Templates →
+          {/* Quick template strip */}
+          <div className="text-center mb-6">
+            <p className="text-sm text-gray-500 font-medium">Most popular resume templates</p>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 gap-3 mb-8">
+            {['modern','classic','minimal','professional','sidebar','tech'].map(id => (
+              <Link key={id} to="/resume-templates"
+                className="group rounded-xl overflow-hidden border-2 border-transparent hover:border-[#1a2744] transition shadow-sm hover:shadow-md">
+                <div className="relative overflow-hidden bg-gray-100" style={{ height: '140px' }}>
+                  <img src={`/template-previews/${id}.jpg`} alt={id} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"/>
+                  <div className="absolute inset-0 bg-[#1a2744]/0 group-hover:bg-[#1a2744]/40 transition-all duration-300 flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition bg-white text-[#1a2744] text-xs font-bold px-3 py-1.5 rounded-full shadow">Use</span>
+                  </div>
+                </div>
+                <div className="bg-white px-2 py-1.5 text-center">
+                  <p className="text-xs font-semibold text-gray-700 capitalize">{id === 'bluesidebar' ? 'Blue Sidebar' : id.charAt(0).toUpperCase() + id.slice(1)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link to="/resume-templates" className="inline-flex items-center gap-2 px-6 py-3 bg-[#1a2744] text-white font-semibold rounded-xl hover:bg-[#152235] transition text-sm">
+              View All 30 Templates →
             </Link>
           </div>
         </div>
@@ -438,7 +476,7 @@ export default function Home() {
             {[
               { href: '/resume-tips', emoji: '📄', label: 'Resume Guide', title: 'How to Write a Resume That Gets Callbacks', body: 'ATS tips, bullet point formulas, formatting advice — practical and India-specific.' },
               { href: '/cover-letter-tips', emoji: '✉️', label: 'Cover Letter', title: 'How to Write a Cover Letter That Gets Noticed', body: 'Structure, tone, openers, closers — everything from scratch to final draft.' },
-              { href: '/templates', emoji: '🎨', label: 'Templates', title: 'Browse All 17 Resume Templates', body: 'Minimal, creative, professional, ATS-friendly — there\'s one for every role.' },
+              { href: '/resume-templates', emoji: '🎨', label: 'Templates', title: 'Browse All 17 Resume Templates', body: 'Minimal, creative, professional, ATS-friendly — there\'s one for every role.' },
             ].map(c => (
               <Link
                 key={c.href}
@@ -510,7 +548,7 @@ export default function Home() {
               Build My Resume — Free →
             </Link>
             <Link
-              to="/templates"
+              to="/resume-templates"
               className="px-8 py-4 bg-transparent text-white font-bold rounded-xl border-2 border-white/25 hover:border-white/50 hover:bg-white/10 transition text-base"
             >
               Browse Templates
@@ -541,7 +579,7 @@ export default function Home() {
             <div>
               <h4 className="font-bold text-xs text-gray-400 uppercase tracking-widest mb-4">Product</h4>
               <ul className="space-y-2.5 text-sm text-gray-500">
-                <li><Link to="/templates" className="hover:text-white transition">Templates</Link></li>
+                <li><Link to="/resume-templates" className="hover:text-white transition">Templates</Link></li>
                 <li><Link to={ctaLink} className="hover:text-white transition">Resume Builder</Link></li>
                 <li><Link to="/cover-letter-tips" className="hover:text-white transition">Cover Letter</Link></li>
                 <li><Link to="/dashboard" className="hover:text-white transition">Dashboard</Link></li>
