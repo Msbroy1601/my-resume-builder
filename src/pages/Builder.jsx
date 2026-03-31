@@ -626,24 +626,33 @@ const BulletList = ({ text, className = '' }) =>{
 // First 5 are FREE; the rest require Pro
 const FREE_TEMPLATE_IDS = ['modern', 'classic', 'minimal', 'professional', 'sidebar']
 
+// Formal professional colors only — blacks, navies, and corporate blues
+const ACCENT_COLORS = [
+  { hex: '#111827', name: 'Black' },
+  { hex: '#1a2744', name: 'Navy' },
+  { hex: '#0f2044', name: 'Midnight' },
+  { hex: '#1e3a5f', name: 'Deep Blue' },
+  { hex: '#1d4ed8', name: 'Royal Blue' },
+  { hex: '#0369a1', name: 'Steel Blue' },
+  { hex: '#1e40af', name: 'Corporate Blue' },
+  { hex: '#374151', name: 'Charcoal' },
+  { hex: '#334155', name: 'Slate' },
+  { hex: '#1e293b', name: 'Dark Slate' },
+]
+
 const TEMPLATE_LIST = [
-  { id: 'modern',       name: 'Modern',        badge: 'Popular' },
-  { id: 'classic',      name: 'Classic',        badge: '' },
-  { id: 'minimal',      name: 'Minimal',        badge: '' },
-  { id: 'professional', name: 'Professional',   badge: 'ATS Friendly' },
-  { id: 'sidebar',      name: 'Sidebar',        badge: 'Photo' },
-  { id: 'elegant',      name: 'Elegant',        badge: '' },
-  { id: 'tech',         name: 'Tech',           badge: 'For Devs' },
-  { id: 'greensidebar', name: 'Green Sidebar',  badge: 'Photo' },
-  { id: 'goldheader',   name: 'Gold Header',    badge: 'Photo' },
-  { id: 'classicserif', name: 'Classic Serif',  badge: 'Photo' },
-  { id: 'coral',        name: 'Coral',          badge: 'Photo' },
-  { id: 'amber',        name: 'Amber',          badge: 'Photo' },
-  { id: 'serif2',       name: 'Formal Serif',   badge: 'Photo' },
-  { id: 'hexagon',      name: 'Hexagon',        badge: '' },
-  { id: 'navy',         name: 'Navy Icons',     badge: 'Photo' },
-  { id: 'bluesidebar',  name: 'Blue Sidebar',   badge: 'Photo' },
-  { id: 'creative',     name: 'Creative',       badge: '' },
+  { id: 'modern',       name: 'Modern',          badge: 'Popular' },
+  { id: 'classic',      name: 'Classic',          badge: '' },
+  { id: 'minimal',      name: 'Minimal',          badge: 'Clean' },
+  { id: 'professional', name: 'Professional',     badge: 'ATS Friendly' },
+  { id: 'elegant',      name: 'Elegant',          badge: '' },
+  { id: 'tech',         name: 'Tech',             badge: 'For Devs' },
+  { id: 'classicserif', name: 'Classic Serif',    badge: '' },
+  { id: 'serif2',       name: 'Formal Serif',     badge: '' },
+  { id: 'hexagon',      name: 'Executive',        badge: '' },
+  { id: 'navy',         name: 'Navy Icons',       badge: '' },
+  { id: 'bluesidebar',  name: 'Blue Sidebar',     badge: 'Photo' },
+  { id: 'sidebar',      name: 'Sidebar',          badge: 'Photo' },
 ]
 
 //  COMPONENT: Searchable Dropdown 
@@ -903,6 +912,11 @@ function Builder() {
   const [skillSearch, setSkillSearch] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
+  // Accent colour (template theming)
+  const [accentColor, setAccentColor] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('resumeData') || '{}').accentColor || '#1a2744' } catch { return '#1a2744' }
+  })
+
   // Editing indices for Education, Projects, Certifications
   const [editingEducIdx, setEditingEducIdx] = useState(null)
   const [editingProjIdx, setEditingProjIdx] = useState(null)
@@ -914,6 +928,10 @@ function Builder() {
 
   // Pre-download Tune-Up upsell
   const [showTuneUpPreDownload, setShowTuneUpPreDownload] = useState(false)
+
+  // Post-import feedback modal
+  const [showImportFeedback, setShowImportFeedback] = useState(false)
+  const [importFeedbackData, setImportFeedbackData] = useState({ detected: [], missing: [] })
 
   // Lazy-load role suggestions on mount
   useEffect(() =>{
@@ -973,7 +991,7 @@ function Builder() {
   }, [searchParams])
 
   const handleSave = () =>{
-    localStorage.setItem('resumeData', JSON.stringify({ name, email, phone, location, summary, workExperiences, educationList, projects, skillsList, certifications, websiteLinks, languages, hobbies, selectedTemplate, photo }))
+    localStorage.setItem('resumeData', JSON.stringify({ name, email, phone, location, summary, workExperiences, educationList, projects, skillsList, certifications, websiteLinks, languages, hobbies, selectedTemplate, photo, accentColor }))
     alert(' Resume saved to browser!')
   }
 
@@ -1438,139 +1456,213 @@ function Builder() {
   }
 
   const extractFromText = (text) => {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
-    const result = {
-      name: '', email: '', phone: '', location: '', summary: '',
-      workExperiences: [], educationList: [], skillsList: [],
-    }
+    // ── Step 0: Unicode normalisation — CRITICAL for PDF extracted text
+    //    Curly apostrophes → straight, all dash variants → –, non-breaking space → regular
+    const normalized = text
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035\uFF07]/g, "'")
+      .replace(/[\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\t/g, ' ')
+    const rawLines = normalized.split('\n')
+      .map(l => l.replace(/\s{2,}/g, ' ').trim())
+      .filter(Boolean)
+    const result = { name: '', email: '', phone: '', location: '', summary: '', workExperiences: [], educationList: [], skillsList: [], projects: [] }
 
     // ── Email
-    const emailMatch = text.match(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/)
+    const emailMatch = normalized.match(/[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}/)
     if (emailMatch) result.email = emailMatch[0]
 
-    // ── Phone
-    const phoneMatch = text.match(/(\+?[\d][\d\s\-().]{7,15}\d)/)
-    if (phoneMatch) result.phone = phoneMatch[0].trim()
+    // ── Phone — handles Indian (+91 XXXXX XXXXX), US, international formats
+    const phonePatterns = [
+      /\+?91[\s\-]?[6-9]\d{9}/,
+      /[6-9]\d{9}/,
+      /\+?[\d][\d\s\-().]{8,16}\d/,
+    ]
+    for (const pp of phonePatterns) {
+      const pm = normalized.match(pp)
+      if (pm) { result.phone = pm[0].replace(/\s+/g, ' ').trim(); break }
+    }
 
-    // ── Helper: strip decorative chars from start/end of a line before section matching
-    const cleanLine = (l) => l.replace(/^[\s\-—–•*|=_~#+]+|[\s\-—–•*|=_~#+:]+$/g, '').trim()
+    // ── Helper: strip leading/trailing decorators
+    const cleanLine = (l) => l.replace(/^[\s\-\u2013\u2014•*|=_~#+▪▸►◆◇○●◉✓✔✗\u2022\u25cf]+|[\s\-\u2013\u2014•*|=_~#+:▪▸►◆◇○●◉✓✔\u2022\u25cf]+$/g, '').trim()
 
-    // ── Broad section header pattern (used to stop collecting content and to skip in name detection)
-    const ANY_SECTION = /^(summary|profile|about|objective|experience|work|employment|career|professional background|education|academic|qualification|skills|competencies|technologies|expertise|projects|certification|certificate|award|achievement|language|hobbies|interest|reference|activities|volunteer)/i
+    // ── Major section keywords
+    const ANY_SECTION = /^(summary|profile|about|objective|experience|work|employment|career|professional background|education|academic|qualification|skills|competencies|technologies|expertise|projects|certification|certificate|award|achievement|language|hobbies|interest|reference|activities|volunteer|declaration|personal details|contact|links|social|position|co.curricular|extra.curricular)/i
 
-    // ── Name — first short non-contact, non-header line in top 10 lines
-    for (const line of lines.slice(0, 10)) {
+    // ── Sub-headers inside work blocks (skip, don't stop collection)
+    const WORK_SUBSECTION = /^(responsibilities|achievements?|key achievements?|key responsibilities|roles?\s*(and|&)\s*responsibilities|job description|duties|tasks?|accomplishments?)\s*:?\s*$/i
+
+    // ── LinkedIn / GitHub
+    const linkedinMatch = normalized.match(/linkedin\.com\/in\/[^\s,)>|]+/i)
+    const githubMatch   = normalized.match(/github\.com\/[^\s,)>|]+/i)
+    if (linkedinMatch) result.linkedin = 'https://' + linkedinMatch[0].replace(/^https?:\/\//i, '')
+    if (githubMatch)   result.github   = 'https://' + githubMatch[0].replace(/^https?:\/\//i, '')
+
+    // ── Name — scan top 15 lines; skip institution/university headers
+    const INSTITUTION_KW = /\b(university|college|institute|faculty|school of|department|management studies|technology|science|commerce|arts)\b/i
+    for (const line of rawLines.slice(0, 15)) {
       const cl = cleanLine(line)
       if (
-        cl.length >= 2 && cl.length <= 60 &&
+        cl.length >= 2 && cl.length <= 55 &&
         /[a-zA-Z]/.test(cl) &&
-        !cl.match(/@|http|linkedin|github|www\.|^\+?\d/) &&
-        !ANY_SECTION.test(cl) &&
+        !cl.match(/@|http|linkedin|github|www\./) &&
+        !INSTITUTION_KW.test(cl) &&
+        !/^\(/.test(cl) &&
         !/^\d/.test(cl) &&
-        // Must look like a name: mostly letters, spaces, dots, hyphens
-        /^[A-Za-z][A-Za-z.\-'\s]{1,55}$/.test(cl)
-      ) {
-        result.name = cl; break
-      }
+        !ANY_SECTION.test(cl) &&
+        /^[A-Za-z][A-Za-z.\-'\s]{1,50}$/.test(cl) &&
+        cl.split(/\s+/).length <= 5
+      ) { result.name = cl; break }
     }
 
-    // ── Location — flexible city/country patterns
+    // ── Location
+    const CITIES = 'Mumbai|Delhi|New Delhi|Bangalore|Bengaluru|Hyderabad|Chennai|Pune|Kolkata|Ahmedabad|Jaipur|Surat|Lucknow|Noida|Gurugram|Gurgaon|Faridabad|Indore|Bhopal|Patna|Chandigarh|Kochi|Coimbatore|Nagpur|Visakhapatnam|Vadodara|Thane|Navi Mumbai|Mysuru|Mysore|Agra|Varanasi|Meerut|Nashik|Rajkot|Aurangabad|Ranchi|Bhubaneswar|Dehradun|Thiruvananthapuram|Jabalpur|Jodhpur|Raipur|Kota|Guwahati|Hinjewadi|London|New York|San Francisco|Sydney|Toronto|Dubai|Singapore|Berlin|Paris|Amsterdam'
     const locPatterns = [
-      /\b([A-Z][a-z]+(?:[\s,]+[A-Z][a-z]+){0,3})\s*[,|]\s*(India|UK|US|USA|United Kingdom|United States|Australia|Canada|Singapore|UAE|Remote)\b/,
-      /\b(Mumbai|Delhi|Bangalore|Bengaluru|Hyderabad|Chennai|Pune|Kolkata|Ahmedabad|Jaipur|Surat|Lucknow|Noida|Gurugram|Gurgaon|Indore|Bhopal|Patna|Chandigarh|Kochi|Coimbatore|Nagpur|Visakhapatnam|London|New York|San Francisco|Sydney|Toronto|Dubai|Singapore)\b/i,
+      new RegExp(`\\b(${CITIES})\\b\\s*[,|\\-]\\s*(India|UK|US|USA|United Kingdom|United States|Australia|Canada|Singapore|UAE|Remote)?`, 'i'),
+      new RegExp(`\\b(${CITIES})\\b`, 'i'),
+      /\b([A-Z][a-z]+(?:[\s,]+[A-Z][a-z]+){0,2})\s*[,|]\s*(India|UK|US|USA|United States|Australia|Canada|Singapore|UAE|Remote)\b/,
     ]
     for (const pat of locPatterns) {
-      const m = text.slice(0, 600).match(pat)
-      if (m) { result.location = m[0].trim(); break }
+      const m = normalized.slice(0, 800).match(pat)
+      if (m) { result.location = m[0].replace(/[|]+$/, '').trim(); break }
     }
 
-    // ── Helper: find the first line matching any of the given patterns
-    // We clean each line before testing so decorative chars don't block matching
-    const findSection = (patterns) => lines.findIndex(l => {
+    // ── Section finder — strips trailing duration like "31 Months", "2 Yrs" from header line
+    const findSection = (patterns) => rawLines.findIndex(l => {
       const cl = cleanLine(l)
-      return cl.length > 0 && patterns.some(p => p.test(cl))
+        .replace(/\s*:$/, '')
+        .replace(/\s+\d+[\s+]*(months?|years?|yrs?|weeks?).*$/i, '')
+        .trim()
+      return cl.length > 0 && cl.length < 70 && patterns.some(p => p.test(cl))
     })
 
-    const summaryIdx  = findSection([/^(summary|profile|about me|about|objective|professional summary|career objective|personal statement|personal profile|executive summary)/i])
-    const expIdx      = findSection([/^(experience|work experience|employment history|professional experience|work history|career history|employment|professional background|career summary)/i])
-    const eduIdx      = findSection([/^(education|academic background|qualifications|academic qualifications|educational background|academic history|education and training)/i])
-    const skillsIdx   = findSection([/^(skills|technical skills|core skills|key skills|competencies|technologies|areas of expertise|expertise|technical expertise|tools & technologies|tools and technologies|tools)/i])
-    const projectsIdx = findSection([/^(projects|personal projects|key projects|notable projects|selected projects)/i])
-    const certIdx     = findSection([/^(certifications|certificates|awards|achievements|licenses|honors)/i])
+    const summaryIdx   = findSection([/^(summary|profile|about me|about|objective|professional summary|career objective|personal statement|personal profile|executive summary|career profile|profile summary|professional profile)/i])
+    const expIdx       = findSection([/^(experience|work experience|employment history|professional experience|work history|career history|employment|professional background|career summary|relevant experience|job history|work details|internship)/i])
+    const eduIdx       = findSection([/^(education|academic background|qualifications|academic qualifications|educational background|academic history|academics|educational details|educational qualifications)/i])
+    const skillsIdx    = findSection([/^(skills|technical skills|core skills|key skills|competencies|technologies|areas of expertise|expertise|technical expertise|tools|skill set|professional skills|programming languages|technical competencies|hard skills|soft skills)/i])
+    const projectsIdx  = findSection([/^(projects|personal projects|key projects|notable projects|selected projects|academic projects|major projects|project details|project work)/i])
+    const certIdx      = findSection([/^(certifications|certificates|awards|achievements|licenses|honors|honours|credentials|co.curricular|extra.curricular)/i])
+    const langIdx      = findSection([/^(languages|language proficiency|language skills|linguistic skills)/i])
+    const hobbyIdx     = findSection([/^(hobbies|interests|hobbies & interests|extracurricular|activities|personal interests)/i])
+    const positionsIdx = findSection([/^(positions? of responsibility|leadership|positions? held)/i])
 
-    // Helper: next section boundary after a given index
-    const allSectionIdxs = [summaryIdx, expIdx, eduIdx, skillsIdx, projectsIdx, certIdx].filter(i => i > -1)
+    const allSectionIdxs = [summaryIdx, expIdx, eduIdx, skillsIdx, projectsIdx, certIdx, langIdx, hobbyIdx, positionsIdx].filter(i => i > -1)
     const nextSectionAfter = (idx) =>
-      allSectionIdxs.filter(i => i > idx).reduce((min, i) => (i < min ? i : min), lines.length)
+      allSectionIdxs.filter(i => i > idx).reduce((min, i) => (i < min ? i : min), rawLines.length)
 
     // ── Summary
     if (summaryIdx !== -1) {
       const end = nextSectionAfter(summaryIdx)
-      const summaryLines = []
-      for (let i = summaryIdx + 1; i < Math.min(end, summaryIdx + 12); i++) {
-        if (ANY_SECTION.test(cleanLine(lines[i]))) break
-        summaryLines.push(lines[i])
+      const lines = []
+      for (let i = summaryIdx + 1; i < Math.min(end, summaryIdx + 15); i++) {
+        const cl = cleanLine(rawLines[i])
+        if (ANY_SECTION.test(cl) && cl.length < 50) break
+        if (cl.length > 10) lines.push(cl)
       }
-      result.summary = summaryLines.join(' ').trim()
+      result.summary = lines.join(' ').trim()
     }
 
     // ── Skills
     if (skillsIdx !== -1) {
       const end = nextSectionAfter(skillsIdx)
-      const skillLines = []
-      for (let i = skillsIdx + 1; i < Math.min(end, skillsIdx + 30); i++) {
-        skillLines.push(lines[i])
+      const skillText = rawLines.slice(skillsIdx + 1, Math.min(end, skillsIdx + 40)).join(' | ')
+      const rawSkills = skillText
+        .split(/[,•|·\n\/;◆▪►✓★\u2022\u25cf]+/)
+        .map(s => s.replace(/:\s*(beginner|intermediate|advanced|expert|proficient|basic|good|excellent|fluent)/i, '').trim())
+        .filter(s => s.length >= 2 && s.length <= 60 && /[a-zA-Z]/.test(s) && !/^\d+$/.test(s) && !ANY_SECTION.test(cleanLine(s)))
+      result.skillsList = [...new Set(rawSkills)].slice(0, 30).map(sName => ({ name: sName.trim(), level: 3 }))
+    }
+
+    // ── Date regex — works on Unicode-normalised text (apostrophes already → ', dashes → -)
+    const DATE_RE = /\b((Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)'?\s*\d{2,4}|\d{1,2}[\/\-]\d{4}|20\d{2}|19\d{2})\s*[-\u2013\/to\s]+\s*((Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)'?\s*\d{2,4}|\d{1,2}[\/\-]\d{4}|20\d{2}|19\d{2}|Present|Current|Now|Till\s*date|To\s*date|Ongoing|Till\s*now)/i
+
+    // Month → 3-letter abbr
+    const MONTH_MAP = { jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun',jul:'Jul',aug:'Aug',sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec' }
+    const normMonth = (s) => { if (!s) return ''; const k = s.toLowerCase().replace(/['.]/g,'').slice(0,3); return MONTH_MAP[k] || s }
+
+    const parseMonthYear = (str) => {
+      if (!str) return { month: '', year: '' }
+      str = str.trim()
+      // "Oct'16" or "Oct 16" (2-digit year)
+      const m2 = str.match(/^([A-Za-z]+)['.\s]*(\d{2})$/)
+      if (m2) return { month: normMonth(m2[1]), year: (parseInt(m2[2]) > 50 ? '19' : '20') + m2[2] }
+      // "Oct 2016"
+      const m4 = str.match(/^([A-Za-z]+)['.\s]*(\d{4})$/)
+      if (m4) return { month: normMonth(m4[1]), year: m4[2] }
+      // MM/YYYY
+      const slash = str.match(/^(\d{1,2})[\/\-](\d{4})$/)
+      if (slash) { const ms=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return { month: ms[parseInt(slash[1])]||'', year: slash[2] } }
+      // Bare year
+      if (/^(19|20)\d{2}$/.test(str)) return { month: '', year: str }
+      return { month: '', year: str }
+    }
+
+    // ── Split "Company Role" on the same line — used for FMS/MBA format
+    const JOB_TITLE_RE = /\b(software|senior|sr\.?|junior|jr\.?|lead|principal|chief|associate|assistant|head|vp|vice\s+president)\s+\w+|\b(engineer|developer|manager|analyst|designer|architect|executive|officer|director|consultant|specialist|scientist|intern|trainee|programmer|technologist|researcher|banker|advisor|officer)\b/i
+    const ROLE_MODIFIER_RE = /^(software|senior|sr|junior|jr|lead|principal|associate|assistant|full.?stack|front.?end|back.?end|data|cloud|mobile|cyber|qa|ml|ai|ui|ux|devops|digital|product|project|business|financial|hr|account|sales|marketing|content|credit|risk|equity)$/i
+
+    const splitCompanyRole = (text) => {
+      const m = text.match(JOB_TITLE_RE)
+      if (!m) {
+        const words = text.trim().split(/\s+/)
+        return { company: words.slice(0, 2).join(' '), jobTitle: words.slice(2).join(' ') || text.trim() }
       }
-      const skillText = skillLines.join(', ')
-      const skills = skillText.split(/[,•|·\n\/;]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 50 && /[a-zA-Z]/.test(s))
-      result.skillsList = [...new Set(skills)].slice(0, 25).map(sName => ({ name: sName, level: 3 }))
+      const roleStart = m.index
+      const preText  = text.slice(0, roleStart).trim()
+      const preWords = preText.split(/\s+/).filter(Boolean)
+      // Walk back to include role modifier words (e.g. "Software" before "Engineer")
+      let back = 0
+      for (let i = preWords.length - 1; i >= 0; i--) {
+        if (ROLE_MODIFIER_RE.test(preWords[i])) back++
+        else break
+      }
+      const company  = preWords.slice(0, preWords.length - back).join(' ').trim()
+      const roleHead = preWords.slice(preWords.length - back).join(' ')
+      const jobTitle = (roleHead ? roleHead + ' ' : '') + text.slice(roleStart).trim()
+      return { company: company || text.trim(), jobTitle: jobTitle.trim() || text.trim() }
     }
 
     // ── Work Experience
-    const DATE_RE = /((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]*\d{4}|\b\d{4}\b)\s*[-–—to]+\s*((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]*\d{4}|\b\d{4}\b|Present|Current|Now)/i
-
     if (expIdx !== -1) {
       const end = nextSectionAfter(expIdx)
-      const expLines = lines.slice(expIdx + 1, end)
-
+      const expLines = rawLines.slice(expIdx + 1, end)
       const jobBlocks = []
       let currentBlock = null
-
-      const isBullet = (l) => /^[•\-·\*]/.test(l)
-      const isValidTitleLine = (l) => l && l.length > 1 && l.length < 100 && /[a-zA-Z]/.test(l) && !l.match(DATE_RE) && !isBullet(l)
+      const isBullet = (l) => /^[•\-·*▪►◆✓★\u2022\u25cf]/.test(l) || /^\s{2,}\S/.test(l)
+      const isValidTitleLine = (l) => {
+        const cl = cleanLine(l)
+        return l && l.length > 1 && l.length < 120 && /[a-zA-Z]/.test(l) && !DATE_RE.test(l) && !isBullet(l) && !ANY_SECTION.test(cl) && !WORK_SUBSECTION.test(cl)
+      }
 
       for (let i = 0; i < expLines.length; i++) {
         const line = expLines[i]
-        const dateMatch = line.match(DATE_RE)
+        const cl = cleanLine(line)
+        if (WORK_SUBSECTION.test(cl)) continue   // skip "Responsibilities", "Achievements" sub-headers
 
+        const dateMatch = line.match(DATE_RE)
         if (dateMatch) {
           if (currentBlock) jobBlocks.push(currentBlock)
           const dateStr = dateMatch[0]
-          const parts = dateStr.split(/\s*[-–—to]+\s*/i)
+          const parts = dateStr.split(/\s*[-\u2013\/]+\s*|(?:\bto\b)/i).filter(Boolean)
           const startStr = (parts[0] || '').trim()
           const endStr   = (parts[1] || '').trim()
-          const isPresent = /present|current|now/i.test(endStr)
+          const isPresent = /present|current|now|till\s*date|to\s*date|ongoing|till\s*now/i.test(endStr)
           const start = parseMonthYear(startStr)
           const end2  = isPresent ? { month: '', year: '' } : parseMonthYear(endStr)
 
-          // Collect lines immediately before this date that look like title/company
-          // (go back up to 3, stop at bullets or another date)
+          // KEY FIX: capture any text on the SAME line, before the date (FMS/MBA format)
+          const sameLine = cleanLine(line.slice(0, dateMatch.index))
+
+          // Also collect beforeLines from prior lines (standard multi-line format)
           const bLines = []
           let b = i - 1
-          while (b >= 0 && (i - b) <= 3) {
+          while (b >= 0 && (i - b) <= 4) {
             const bl = expLines[b]
-            if (!bl || bl.match(DATE_RE) || isBullet(bl)) break
-            bLines.unshift(bl)
+            if (!bl || DATE_RE.test(bl) || isBullet(bl)) break
+            if (!WORK_SUBSECTION.test(cleanLine(bl))) bLines.unshift(bl)
             b--
           }
-
-          currentBlock = {
-            startMonth: start.month, startYear: start.year,
-            endMonth: end2.month, endYear: end2.year,
-            isPresent,
-            beforeLines: bLines,
-            afterLines: []
-          }
+          currentBlock = { startMonth: start.month, startYear: start.year, endMonth: end2.month, endYear: end2.year, isPresent, sameLine, beforeLines: bLines, afterLines: [] }
         } else if (currentBlock) {
           currentBlock.afterLines.push(line)
         }
@@ -1579,69 +1671,157 @@ function Builder() {
 
       for (const block of jobBlocks) {
         let jobTitle = '', company = ''
-        const bCands = block.beforeLines.filter(isValidTitleLine)
-        const aCands = block.afterLines.filter(isValidTitleLine)
 
-        if (bCands.length >= 2) {
-          jobTitle = bCands[bCands.length - 2]
-          company  = bCands[bCands.length - 1]
-        } else if (bCands.length === 1) {
-          jobTitle = bCands[0]
-          company  = aCands[0] || ''
+        if (block.sameLine && block.sameLine.length > 1) {
+          // FMS/MBA style: "Tech Mahindra Software Engineer" — split by job title keyword
+          const { company: co, jobTitle: jt } = splitCompanyRole(block.sameLine)
+          company = co; jobTitle = jt
         } else {
-          // Date came first — title/company are in afterLines
-          jobTitle = aCands[0] || ''
-          company  = aCands[1] || ''
+          const bCands = block.beforeLines.filter(isValidTitleLine)
+          const aCands = block.afterLines.filter(isValidTitleLine)
+          const COMP_KW = /\b(Ltd|Pvt|Inc|Corp|LLC|LLP|Solutions|Technologies|Tech|Systems|Services|Consulting|Group|Global|India|International|Mahindra|Infosys|Wipro|TCS|Accenture|IBM|Google|Microsoft|Amazon|Mondelez|Kraft)\b/i
+
+          if (bCands.length >= 2) {
+            if (COMP_KW.test(bCands[bCands.length - 1])) {
+              company = bCands[bCands.length - 1]; jobTitle = bCands[bCands.length - 2]
+            } else {
+              jobTitle = bCands[bCands.length - 1]; company = bCands[bCands.length - 2]
+            }
+          } else if (bCands.length === 1) {
+            const compCand = aCands.find(l => COMP_KW.test(l))
+            jobTitle = bCands[0]; company = compCand || aCands[0] || ''
+          } else {
+            const compCand = aCands.find(l => COMP_KW.test(l))
+            if (compCand) { company = compCand; jobTitle = aCands.filter(l => l !== compCand)[0] || '' }
+            else { company = aCands[0] || ''; jobTitle = aCands[1] || '' }
+          }
         }
 
         const respLines = block.afterLines
-          .filter(l => isBullet(l) || (l.length > 20 && l !== company && l !== jobTitle))
-          .map(l => l.replace(/^[•\-·\*]\s*/, ''))
+          .filter(l => {
+            const cl = cleanLine(l)
+            return (isBullet(l) || l.length > 15) && cl !== company && cl !== jobTitle && !DATE_RE.test(l) && !WORK_SUBSECTION.test(cl) && !ANY_SECTION.test(cl)
+          })
+          .map(l => l.replace(/^[•\-·*▪►◆✓\u2022\u25cf]\s*/, '').trim())
           .filter(l => l.length > 5)
 
-        result.workExperiences.push({
-          jobTitle: jobTitle.trim(),
-          company: company.trim(),
-          startMonth: block.startMonth, startYear: block.startYear,
-          endMonth: block.endMonth, endYear: block.endYear,
-          isPresent: block.isPresent,
-          responsibilities: respLines.slice(0, 6).join('\n'),
-          achievements: ''
-        })
+        if (jobTitle || company) {
+          result.workExperiences.push({
+            jobTitle: jobTitle.trim(), company: company.trim(),
+            startMonth: block.startMonth, startYear: block.startYear,
+            endMonth: block.endMonth, endYear: block.endYear, isPresent: block.isPresent,
+            responsibilities: respLines.slice(0, 8).join('\n'), achievements: ''
+          })
+        }
       }
+      result.workExperiences = result.workExperiences.filter(w => w.jobTitle || w.company)
     }
 
-    // ── Education
+    // ── Education — handles pipe-separated, MBA compact years (2019-21), plain space-separated
     if (eduIdx !== -1) {
       const end = nextSectionAfter(eduIdx)
-      const eduLines = lines.slice(eduIdx + 1, end)
+      const eduLines = rawLines.slice(eduIdx + 1, end)
       let currentEdu = null
 
+      const DEGREE_RE = /\b(b\.?tech|be|b\.?e\.?|m\.?tech|me|m\.?e\.?|bsc|b\.sc|msc|m\.?sc|bca|mca|ba\b|ma\b|bba|mba|b\.?com|m\.?com|llb|llm|b\.?arch|phd|ph\.d|diploma|pgdm|pgd|bachelor|master|doctor|mphil|m\.phil|intermediate|10th|12th|ssc|hsc|cbse|icse|class\s+(x|xi|xii|10|11|12))/i
+
+      const getScore = (line) => {
+        const m = line.match(/\b(\d+\.?\d*)\s*(%|cgpa|gpa|\/10|\/100|marks?|grade)/i)
+        return m ? m[1] + (m[2] || '') : ''
+      }
+      const getYears = (line) => {
+        // Handle compact range "2019-21" → { start: '2019', end: '2021' }
+        const compact = line.match(/\b(20\d{2}|19\d{2})\s*-\s*(\d{2})\b/)
+        if (compact) return { startYear: compact[1], endYear: compact[1].slice(0, 2) + compact[2] }
+        const full = line.match(/\b(19|20)\d{2}\b/g) || []
+        return { startYear: full[0] || '', endYear: full[1] || full[0] || '' }
+      }
+
       for (const line of eduLines) {
-        if (ANY_SECTION.test(cleanLine(line)) && !/^(education)/i.test(cleanLine(line))) break
-        const years = line.match(/\b(19|20)\d{2}\b/g) || []
-        const hasYear = years.length > 0
-        if (hasYear) {
+        const cl = cleanLine(line)
+        if (!cl) continue
+        if (ANY_SECTION.test(cl) && cl.length < 50 && !/^education/i.test(cl)) break
+
+        const { startYear, endYear } = getYears(line)
+        const hasYear   = !!(startYear || endYear)
+        const hasDegree = DEGREE_RE.test(cl)
+        const score     = getScore(line)
+
+        // Pipe-separated: "B.Tech | ECE | Narula Institute | 2016 | 8.75/10"
+        if (cl.includes('|') && (hasYear || hasDegree)) {
+          const parts = cl.split('|').map(p => p.trim()).filter(Boolean)
+          const degreeP = parts.find(p => DEGREE_RE.test(p)) || parts[0] || ''
+          const yearP   = parts.find(p => /\b(19|20)\d{2}\b/.test(p) || /\b(20|19)\d{2}\s*-\s*\d{2}\b/.test(p)) || ''
+          const scorePat = /^\d+[\.\d]*\s*(%|\/10|\/100|cgpa|gpa)?$/i
+          const otherParts = parts.filter(p => p !== degreeP && p !== yearP && !scorePat.test(p))
+          const schoolP = otherParts[0] || ''
+          const fieldP  = otherParts[1] || ''
+          const { startYear: sy, endYear: ey } = getYears(yearP || line)
           if (currentEdu) result.educationList.push(currentEdu)
-          // Check if the year line itself contains degree info
-          const lineWithoutYear = line.replace(/\b(19|20)\d{2}\b/g, '').replace(/[-–—to|/]+/g, '').trim()
+          currentEdu = null
+          result.educationList.push({ school: schoolP, degree: degreeP, fieldOfStudy: fieldP, schoolLocation: '', startMonth: '', startYear: sy, endMonth: '', endYear: ey, isPresent: false, score })
+          continue
+        }
+
+        // Non-pipe: "MBA 2019-21 FMS Delhi 64.5%" or "B.Tech 2016 Narula..."
+        if (hasYear || hasDegree) {
+          if (currentEdu) result.educationList.push(currentEdu)
+          // Build institution from remainder after removing degree + years + score
+          let remainder = cl
+            .replace(DEGREE_RE, '')
+            .replace(/\b(20|19)\d{2}\s*-\s*\d{2}\b/g, '')
+            .replace(/\b(19|20)\d{2}\b/g, '')
+            .replace(/\d+\.?\d*\s*(%|cgpa|gpa|\/10|\/100|marks?)/gi, '')
+            .replace(/[|,;:]+/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+          const degreeMatch = cl.match(DEGREE_RE)
           currentEdu = {
-            school: '', degree: lineWithoutYear.length > 2 ? lineWithoutYear : '',
-            startMonth: '', startYear: years[0] || '',
-            endMonth: '', endYear: years[1] || years[0] || '',
-            isPresent: /present/i.test(line), score: ''
+            school: remainder.length > 2 ? remainder : '',
+            degree: degreeMatch ? degreeMatch[0] : '',
+            fieldOfStudy: '', schoolLocation: '',
+            startMonth: '', startYear, endMonth: '', endYear,
+            isPresent: /present/i.test(line), score
           }
-        } else if (currentEdu) {
-          if (!currentEdu.degree && line.length > 2 && line.length < 120) {
-            currentEdu.degree = line
-          } else if (!currentEdu.school && line.length > 2 && line.length < 120) {
-            currentEdu.school = line
-          }
-        } else if (line.length > 2 && line.length < 120 && /[a-zA-Z]/.test(line)) {
-          currentEdu = { school: '', degree: line, startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score: '' }
+          result.educationList.push(currentEdu)
+          currentEdu = null
+          continue
+        }
+
+        // Continuation line
+        if (currentEdu) {
+          if (!currentEdu.school && cl.length > 2 && cl.length < 120) currentEdu.school = cl
+          else if (!currentEdu.degree && hasDegree) currentEdu.degree = cl
+          if (score && !currentEdu.score) currentEdu.score = score
+        } else if (cl.length > 2 && cl.length < 120 && /[a-zA-Z]/.test(cl)) {
+          currentEdu = { school: '', degree: cl, fieldOfStudy: '', schoolLocation: '', startMonth: '', startYear: '', endMonth: '', endYear: '', isPresent: false, score }
         }
       }
       if (currentEdu) result.educationList.push(currentEdu)
+      // Swap if school and degree look swapped
+      result.educationList = result.educationList.map(e => {
+        const swap = e.school && DEGREE_RE.test(e.school) && !DEGREE_RE.test(e.degree)
+        return swap ? { ...e, school: e.degree, degree: e.school } : e
+      }).filter(e => e.school || e.degree)
+    }
+
+    // ── Projects
+    if (projectsIdx !== -1) {
+      const end = nextSectionAfter(projectsIdx)
+      const projLines = rawLines.slice(projectsIdx + 1, end)
+      let currentProj = null
+      for (const line of projLines) {
+        const cl = cleanLine(line)
+        if (!cl || cl.length < 2) continue
+        if (/^[•\-·*▪►◆✓\u2022\u25cf]/.test(line) || (currentProj && cl.length > 15 && !WORK_SUBSECTION.test(cl))) {
+          if (currentProj) currentProj.description += (currentProj.description ? ' ' : '') + cl.replace(/^[•\-·*▪►◆✓\u2022\u25cf]\s*/,'')
+          else currentProj = { name: cl, description: '', link: '' }
+        } else if (cl.length > 2 && cl.length < 100) {
+          if (currentProj) result.projects.push(currentProj)
+          currentProj = { name: cl, description: '', link: '' }
+        }
+      }
+      if (currentProj) result.projects.push(currentProj)
     }
 
     return result
@@ -1775,6 +1955,29 @@ function Builder() {
     setImportMsg(null)
     setImportRawText('')
     setShowImportRawText(false)
+
+    // Build feedback summary
+    const detected = []
+    const missing  = []
+    if (importPreview.name)                    detected.push({ icon: '👤', label: 'Full name',            value: importPreview.name })
+    else                                       missing.push ({ icon: '👤', label: 'Full name' })
+    if (importPreview.email)                   detected.push({ icon: '✉️',  label: 'Email address',        value: importPreview.email })
+    else                                       missing.push ({ icon: '✉️',  label: 'Email address' })
+    if (importPreview.phone)                   detected.push({ icon: '📞', label: 'Phone number',          value: importPreview.phone })
+    else                                       missing.push ({ icon: '📞', label: 'Phone number' })
+    if (importPreview.location)                detected.push({ icon: '📍', label: 'Location',              value: importPreview.location })
+    else                                       missing.push ({ icon: '📍', label: 'Location' })
+    if (importPreview.summary)                 detected.push({ icon: '📝', label: 'Professional summary',  value: importPreview.summary.slice(0, 60) + '…' })
+    else                                       missing.push ({ icon: '📝', label: 'Professional summary — add a 2–3 line intro' })
+    if (importPreview.workExperiences?.length) detected.push({ icon: '💼', label: `Work experience`,       value: `${importPreview.workExperiences.length} role${importPreview.workExperiences.length > 1 ? 's' : ''} detected` })
+    else                                       missing.push ({ icon: '💼', label: 'Work experience' })
+    if (importPreview.educationList?.length)   detected.push({ icon: '🎓', label: 'Education',             value: `${importPreview.educationList.length} entr${importPreview.educationList.length > 1 ? 'ies' : 'y'} detected` })
+    else                                       missing.push ({ icon: '🎓', label: 'Education' })
+    if (importPreview.skillsList?.length)      detected.push({ icon: '⚡', label: 'Skills',                value: `${importPreview.skillsList.length} skill${importPreview.skillsList.length > 1 ? 's' : ''} detected` })
+    else                                       missing.push ({ icon: '⚡', label: 'Skills — add 6–10 keywords' })
+
+    setImportFeedbackData({ detected, missing })
+    setShowImportFeedback(true)
   }
 
   const formatDate = (month, year, isPresent) =>{
@@ -2423,6 +2626,29 @@ const BlueSidebarTemplate = () =>(
 
   return (
     <div className="min-h-screen bg-gray-50"> {showPaymentModal && <PaymentModal />}
+      {/* Dynamic accent colour injected into resume preview only */}
+      <style>{`
+        #resume-preview .text-blue-600,#resume-preview .text-blue-500,
+        #resume-preview .text-violet-600,#resume-preview .text-violet-500,
+        #resume-preview .text-green-700,#resume-preview .text-green-800,
+        #resume-preview .text-rose-600,#resume-preview .text-amber-600,
+        #resume-preview .text-orange-600,#resume-preview .text-red-700,
+        #resume-preview .text-indigo-600,#resume-preview .text-purple-700 { color: ${accentColor} !important; }
+        #resume-preview .bg-blue-600,#resume-preview .bg-blue-500,
+        #resume-preview .bg-violet-600,#resume-preview .bg-violet-500,
+        #resume-preview .bg-green-700,#resume-preview .bg-green-800,
+        #resume-preview .bg-rose-600,#resume-preview .bg-amber-600,
+        #resume-preview .bg-orange-400,#resume-preview .bg-orange-600,
+        #resume-preview .bg-indigo-600,#resume-preview .bg-purple-700 { background-color: ${accentColor} !important; }
+        #resume-preview .border-blue-600,#resume-preview .border-blue-500,
+        #resume-preview .border-violet-600,#resume-preview .border-green-700,
+        #resume-preview .border-green-800,#resume-preview .border-rose-600,
+        #resume-preview .border-amber-600,#resume-preview .border-orange-400,
+        #resume-preview .border-indigo-600 { border-color: ${accentColor} !important; }
+        #resume-preview .from-violet-600,#resume-preview .from-violet-500 { --tw-gradient-from: ${accentColor} !important; }
+        #resume-preview .to-purple-600,#resume-preview .to-purple-500 { --tw-gradient-to: ${accentColor} !important; }
+        #resume-preview .stroke-green-800 { stroke: ${accentColor} !important; }
+      `}</style>
 
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -2908,7 +3134,7 @@ const BlueSidebarTemplate = () =>(
                   className={`w-full py-3 px-4 rounded-lg font-semibold transition shadow-md text-white ${currentLanguage.name.trim() ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700' : 'bg-gray-300 cursor-not-allowed'}`}> + Add Language
 </button> {languages.length >0 && (
                   <div className="flex flex-wrap gap-2 mt-2"> {languages.map((lang, i) =>(
-                      <div key={i} className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg"> <span className="text-sm font-semibold text-gray-800">{lang.name}</span> <span className="text-xs text-blue-600">{['','Beginner','Elementary','Intermediate','Advanced','Native'][lang.level]}</span> <button onClick={() =>deleteLanguage(i)} className="text-red-400 hover:text-red-600 text-xs ml-1"></button>
+                      <div key={i} className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg"> <span className="text-sm font-semibold text-gray-800">{lang.name}</span> <span className="text-xs text-blue-600">{['','Beginner','Elementary','Intermediate','Advanced','Native'][lang.level]}</span> <button onClick={() =>deleteLanguage(i)} className="text-red-400 hover:text-red-600 font-bold ml-1 w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-100 transition flex-shrink-0" title="Remove language">×</button>
 </div> ))}
 </div> )}
 </div>
@@ -3110,44 +3336,139 @@ const BlueSidebarTemplate = () =>(
                 <div className={`rounded-xl px-4 py-3 text-sm font-medium ${importMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}> {importMsg.text}
 </div> )}
 
-              {/* Preview parsed data */}
+              {/* Preview parsed data — all fields editable before applying */}
               {importPreview && (
-                <div className="space-y-3"> <h3 className="text-sm font-bold text-gray-700">Detected fields — review before applying:</h3> {[
-                    { label: 'Name', value: importPreview.name },
-                    { label: 'Email', value: importPreview.email },
-                    { label: 'Phone', value: importPreview.phone },
-                    { label: 'Location', value: importPreview.location },
-                  ].filter(f =>f.value).map(f =>(
-                    <div key={f.label} className="flex gap-2 text-sm"> <span className="font-semibold text-gray-500 w-20 flex-shrink-0">{f.label}:</span> <span className="text-gray-800 truncate">{f.value}</span>
-</div> ))}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-gray-700">Review & edit before applying</h3>
+                    <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">✓ All fields editable</span>
+                  </div>
 
-                  {importPreview.summary && (
-                    <div className="text-sm"> <span className="font-semibold text-gray-500">Summary:</span> <p className="text-gray-700 mt-0.5 text-xs line-clamp-3">{importPreview.summary}</p>
-</div> )}
+                  {/* Basic fields — inline editable inputs */}
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-2.5">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Personal Info</p>
+                    {[
+                      { key: 'name',     label: 'Full Name',    placeholder: 'Your name' },
+                      { key: 'email',    label: 'Email',        placeholder: 'email@example.com' },
+                      { key: 'phone',    label: 'Phone',        placeholder: '+91 XXXXX XXXXX' },
+                      { key: 'location', label: 'Location',     placeholder: 'City, Country' },
+                    ].map(f => (
+                      <div key={f.key} className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-500 w-16 flex-shrink-0">{f.label}</span>
+                        <input
+                          type="text"
+                          value={importPreview[f.key] || ''}
+                          onChange={e => setImportPreview(p => ({ ...p, [f.key]: e.target.value }))}
+                          placeholder={f.placeholder}
+                          className="flex-1 text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 block mb-1">Summary</span>
+                      <textarea
+                        value={importPreview.summary || ''}
+                        onChange={e => setImportPreview(p => ({ ...p, summary: e.target.value }))}
+                        placeholder="Professional summary..."
+                        rows={3}
+                        className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white resize-none"
+                      />
+                    </div>
+                  </div>
 
-                  {importPreview.workExperiences?.length >0 && (
-                    <div className="text-sm"> <span className="font-semibold text-gray-500">Work Experience ({importPreview.workExperiences.length} roles detected):</span> <div className="mt-1 space-y-1"> {importPreview.workExperiences.map((w, i) =>(
-                          <div key={i} className="text-xs bg-gray-50 rounded-lg px-3 py-2"> <span className="font-semibold">{w.jobTitle || 'Role'}</span> {w.company && <span className="text-gray-500">@ {w.company}</span>}
-                            {w.startYear && <span className="text-gray-400">· {w.startYear}–{w.isPresent ? 'Present' : w.endYear}</span>}
-</div> ))}
-</div>
-</div> )}
+                  {/* Work experience — editable cards */}
+                  {importPreview.workExperiences?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                        Work Experience <span className="text-orange-500">({importPreview.workExperiences.length} roles)</span>
+                      </p>
+                      <div className="space-y-2">
+                        {importPreview.workExperiences.map((w, i) => (
+                          <div key={i} className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="text" value={w.jobTitle || ''}
+                                onChange={e => setImportPreview(p => { const wx=[...p.workExperiences]; wx[i]={...wx[i],jobTitle:e.target.value}; return {...p,workExperiences:wx} })}
+                                placeholder="Job Title"
+                                className="flex-1 text-xs px-2 py-1 border border-blue-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white font-semibold"
+                              />
+                              <input
+                                type="text" value={w.company || ''}
+                                onChange={e => setImportPreview(p => { const wx=[...p.workExperiences]; wx[i]={...wx[i],company:e.target.value}; return {...p,workExperiences:wx} })}
+                                placeholder="Company"
+                                className="flex-1 text-xs px-2 py-1 border border-blue-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                              />
+                              <button onClick={() => setImportPreview(p => ({ ...p, workExperiences: p.workExperiences.filter((_,j)=>j!==i) }))}
+                                className="text-red-400 hover:text-red-600 text-xs px-1.5 flex-shrink-0 font-bold" title="Remove">×</button>
+                            </div>
+                            <div className="text-xs text-gray-400 flex items-center gap-1">
+                              <span>{w.startMonth} {w.startYear}</span>
+                              {(w.startYear || w.isPresent) && <span>–</span>}
+                              <span>{w.isPresent ? 'Present' : `${w.endMonth} ${w.endYear}`}</span>
+                            </div>
+                            {w.responsibilities && (
+                              <textarea value={w.responsibilities}
+                                onChange={e => setImportPreview(p => { const wx=[...p.workExperiences]; wx[i]={...wx[i],responsibilities:e.target.value}; return {...p,workExperiences:wx} })}
+                                rows={3} className="w-full text-xs px-2 py-1 border border-blue-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white resize-none" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  {importPreview.educationList?.length >0 && (
-                    <div className="text-sm"> <span className="font-semibold text-gray-500">Education ({importPreview.educationList.length} detected):</span> <div className="mt-1 space-y-1"> {importPreview.educationList.map((e, i) =>(
-                          <div key={i} className="text-xs bg-gray-50 rounded-lg px-3 py-2"> <span className="font-semibold">{e.degree || 'Degree'}</span> {e.school && <span className="text-gray-500">@ {e.school}</span>}
-</div> ))}
-</div>
-</div> )}
+                  {/* Education — editable cards */}
+                  {importPreview.educationList?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                        Education <span className="text-orange-500">({importPreview.educationList.length} entries)</span>
+                      </p>
+                      <div className="space-y-2">
+                        {importPreview.educationList.map((e, i) => (
+                          <div key={i} className="bg-green-50 border border-green-100 rounded-xl p-3 space-y-2">
+                            <div className="flex gap-2">
+                              <input type="text" value={e.degree || ''}
+                                onChange={ev => setImportPreview(p => { const el=[...p.educationList]; el[i]={...el[i],degree:ev.target.value}; return {...p,educationList:el} })}
+                                placeholder="Degree / Qualification"
+                                className="flex-1 text-xs px-2 py-1 border border-green-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-400 bg-white font-semibold" />
+                              <button onClick={() => setImportPreview(p => ({ ...p, educationList: p.educationList.filter((_,j)=>j!==i) }))}
+                                className="text-red-400 hover:text-red-600 text-xs px-1.5 flex-shrink-0 font-bold" title="Remove">×</button>
+                            </div>
+                            <input type="text" value={e.school || ''}
+                              onChange={ev => setImportPreview(p => { const el=[...p.educationList]; el[i]={...el[i],school:ev.target.value}; return {...p,educationList:el} })}
+                              placeholder="School / Institution"
+                              className="w-full text-xs px-2 py-1 border border-green-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-400 bg-white" />
+                            <div className="flex gap-2 text-xs text-gray-500">
+                              <span>{e.startYear}{e.endYear && e.endYear !== e.startYear ? `–${e.endYear}` : ''}</span>
+                              {e.score && <span className="text-green-600 font-medium">{e.score}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  {importPreview.skillsList?.length >0 && (
-                    <div className="text-sm"> <span className="font-semibold text-gray-500">Skills ({importPreview.skillsList.length} detected):</span> <div className="flex flex-wrap gap-1.5 mt-1"> {importPreview.skillsList.map((s, i) =>(
-                          <span key={i} className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full text-xs border border-orange-100">{s.name}</span> ))}
-</div>
-</div> )}
+                  {/* Skills — editable chips */}
+                  {importPreview.skillsList?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                        Skills <span className="text-orange-500">({importPreview.skillsList.length} detected)</span>
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {importPreview.skillsList.map((s, i) => (
+                          <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-700 rounded-full text-xs border border-orange-100">
+                            {s.name}
+                            <button onClick={() => setImportPreview(p => ({ ...p, skillsList: p.skillsList.filter((_,j)=>j!==i) }))}
+                              className="text-orange-400 hover:text-red-500 font-bold leading-none ml-0.5">×</button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  <p className="text-xs text-gray-400 italic">This overwrites your current form data. You can edit anything after applying.</p>
-</div> )}
+                  <p className="text-xs text-gray-400 italic text-center">Edit anything above, then click Apply to CV</p>
+                </div>
+              )}
 
               {/* Raw text debug toggle */}
               {importRawText && (
@@ -3245,6 +3566,27 @@ const BlueSidebarTemplate = () =>(
               >×</button>
 </div> {/* Scrollable grid */}
             <div className="flex-1 overflow-y-auto p-4">
+              {/* Zety-style colour theme picker */}
+              <div className="mb-5 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Colour Theme</p>
+                  <span className="text-xs text-gray-400 font-medium" style={{color: accentColor}}>{ACCENT_COLORS.find(c=>c.hex===accentColor)?.name || 'Custom'}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {ACCENT_COLORS.map(c =>(
+                    <button
+                      key={c.hex}
+                      title={c.name}
+                      onClick={() =>{ setAccentColor(c.hex); try { const d = JSON.parse(localStorage.getItem('resumeData')||'{}'); localStorage.setItem('resumeData', JSON.stringify({...d, accentColor: c.hex})) } catch {} }}
+                      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${accentColor === c.hex ? 'bg-white shadow-md ring-2 ring-gray-300 scale-105' : 'hover:bg-white hover:shadow-sm'}`}
+                    >
+                      <div className="w-8 h-8 rounded-full shadow-sm" style={{ backgroundColor: c.hex }} />
+                      <span className="text-[10px] text-gray-500 font-medium leading-tight text-center">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {!isPro && (
                 <div className="mb-3 px-3 py-2.5 bg-[#1a2744] text-white rounded-xl text-xs flex items-center justify-between gap-2">
                   <span>5 free templates. Upgrade to Pro for all 17.</span>
@@ -3519,6 +3861,73 @@ const BlueSidebarTemplate = () =>(
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/*  POST-IMPORT FEEDBACK MODAL  */}
+      {showImportFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.65)'}} onClick={() =>setShowImportFeedback(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e =>e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#1a2744] to-[#2a3f6f] px-6 py-5 text-white relative">
+              <button onClick={() =>setShowImportFeedback(false)} className="absolute top-4 right-4 text-white/60 hover:text-white text-xl font-bold leading-none">×</button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🚀</div>
+                <div>
+                  <h2 className="text-lg font-bold leading-tight">You're off to a great start!</h2>
+                  <p className="text-blue-200 text-xs mt-0.5">We've imported your CV details below</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+              {/* Detected section */}
+              {importFeedbackData.detected.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3 flex items-center gap-1.5">
+                    <span>✅</span> Successfully imported ({importFeedbackData.detected.length})
+                  </p>
+                  <div className="space-y-2">
+                    {importFeedbackData.detected.map((item, i) => (
+                      <div key={i} className="flex items-start gap-3 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+                        <span className="text-base flex-shrink-0 mt-0.5">{item.icon}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-700">{item.label}</p>
+                          {item.value && <p className="text-xs text-gray-500 truncate mt-0.5">{item.value}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing section */}
+              {importFeedbackData.missing.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 flex items-center gap-1.5">
+                    <span>✏️</span> Complete your profile ({importFeedbackData.missing.length} remaining)
+                  </p>
+                  <div className="space-y-2">
+                    {importFeedbackData.missing.map((item, i) => (
+                      <div key={i} className="flex items-start gap-3 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2.5">
+                        <span className="text-base flex-shrink-0 mt-0.5">{item.icon}</span>
+                        <p className="text-xs text-gray-600">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2 text-center">Fill these in using the form on the left →</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer CTA */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={() =>setShowImportFeedback(false)}
+                className="w-full py-3 bg-[#1a2744] text-white rounded-xl font-bold hover:bg-[#243660] transition text-sm"
+              >Let's build my CV →</button>
+            </div>
           </div>
         </div>
       )}

@@ -295,31 +295,57 @@ export default function Home() {
             </Link>
 
             {/* Cover Letter */}
-            <Link to="/cover-letter-templates" className="group relative bg-gradient-to-br from-[#7f1d1d] to-[#8b1a2e] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <Link to="/cover-letter-templates" className="group relative bg-gradient-to-br from-[#0f1c38] to-[#1a2744] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-8">
                 <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl mb-5">✉️</div>
                 <h3 className="text-2xl font-extrabold text-white mb-2">Cover Letter Templates</h3>
-                <p className="text-red-200 text-sm leading-relaxed mb-5">10 distinct styles from formal to bold. Auto-generated from your resume data in seconds.</p>
+                <p className="text-blue-200 text-sm leading-relaxed mb-5">8 professional styles — formal, modern, executive and elegant. Auto-generated from your resume data in seconds.</p>
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {['Formal', 'Modern', 'Executive', 'Creative'].map(tag => (
+                  {['Classic', 'Executive', 'Minimal', 'Elegant'].map(tag => (
                     <span key={tag} className="px-3 py-1 bg-white/10 text-white text-xs font-semibold rounded-full border border-white/20">{tag}</span>
                   ))}
                 </div>
                 <div className="flex items-center gap-2 text-[#f0a04b] font-bold text-sm group-hover:gap-3 transition-all">
-                  Browse 10 templates <span>→</span>
+                  Browse 8 templates <span>→</span>
                 </div>
               </div>
-              {/* Cover letter style swatches */}
+              {/* Mini cover letter mockups */}
               <div className="flex gap-2 px-8 pb-6">
-                {['#1a2744','#7c3aed','#0f1c38','#e85d4a','#d97706'].map(color => (
-                  <div key={color} className="w-8 h-20 rounded-lg flex-shrink-0 opacity-70 group-hover:opacity-90 transition border border-white/20 flex flex-col overflow-hidden">
-                    <div className="h-8 flex-shrink-0" style={{ backgroundColor: color }} />
-                    <div className="flex-1 bg-white/10 p-1 space-y-0.5">
-                      {[...Array(4)].map((_,i) => <div key={i} className="h-0.5 bg-white/30 rounded" />)}
-                    </div>
+                {[
+                  { header: '#1a2744', bar: null },
+                  { header: '#0f1c38', bar: '#f0a04b' },
+                  { header: null,      bar: '#1a2744', leftBar: true },
+                  { header: null,      bar: '#1a2744', minimal: true },
+                ].map((style, idx) => (
+                  <div key={idx} className="w-10 h-20 rounded-lg flex-shrink-0 bg-white opacity-75 group-hover:opacity-95 transition border border-white/30 overflow-hidden flex flex-col">
+                    {style.minimal ? (
+                      <div className="px-1.5 pt-1.5 flex-1 flex flex-col">
+                        <div className="text-[4px] font-bold text-gray-800 leading-none mb-0.5">O. Johnson</div>
+                        <div className="h-px bg-gray-300 mb-1" />
+                        {[100,90,95,85,92,75,60].map((w,i)=><div key={i} className="h-px bg-gray-200 rounded mb-0.5" style={{width:`${w}%`}} />)}
+                      </div>
+                    ) : style.leftBar ? (
+                      <div className="flex gap-1 px-1 pt-1.5 flex-1">
+                        <div className="w-0.5 bg-[#1a2744] rounded-full flex-shrink-0" />
+                        <div className="flex-1 flex flex-col">
+                          <div className="text-[4px] font-bold text-[#1a2744] leading-none mb-1">O. Johnson</div>
+                          {[100,90,95,85,92,75,60].map((w,i)=><div key={i} className="h-px bg-gray-200 rounded mb-0.5" style={{width:`${w}%`}} />)}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="px-1.5 py-1.5 flex-shrink-0" style={{ backgroundColor: style.header }}>
+                          {style.bar && <div className="h-0.5 rounded mb-0.5" style={{ backgroundColor: style.bar, width: '10px' }} />}
+                          <div className="text-[4px] font-bold text-white leading-none">O. Johnson</div>
+                        </div>
+                        <div className="px-1.5 pt-1.5 flex-1 flex flex-col">
+                          {[100,90,95,85,92,75,60].map((w,i)=><div key={i} className="h-px bg-gray-200 rounded mb-0.5" style={{width:`${w}%`}} />)}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
-                <div className="w-8 h-20 rounded-lg flex-shrink-0 bg-white/10 border border-white/20 flex items-center justify-center text-white/60 text-xs font-bold">+5</div>
+                <div className="w-10 h-20 rounded-lg flex-shrink-0 bg-white/10 border border-white/20 flex items-center justify-center text-white/60 text-xs font-bold">+4</div>
               </div>
             </Link>
           </div>

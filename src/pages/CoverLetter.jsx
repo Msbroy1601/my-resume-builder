@@ -7,66 +7,77 @@ import { COVER_LETTER_TEMPLATES } from './CoverLetterTemplates'
 // ── Letter generator ──────────────────────────────────────────────────────────
 
 function generateLetter({ name, email, phone, location, targetJob, company, strengths, tone, yearsExp, latestRole, latestCompany }) {
-  const jobTitle   = targetJob || 'this role'
-  const companyName = company || 'your organisation'
+  const jobTitle    = targetJob || 'this role'
+  const companyName = company   || 'your organisation'
+  const hasExp      = yearsExp > 0
+  const expYrs      = `${yearsExp}+ year${yearsExp > 1 ? 's' : ''}`
 
   const greetings = {
-    formal:     'Dear Hiring Manager,',
-    friendly:   `Dear ${company ? company + ' Team,' : 'Hiring Team,'}`,
-    confident:  'Dear Hiring Manager,',
+    formal:    'Dear Hiring Manager,',
+    friendly:  `Dear ${company ? company + ' Team,' : 'Hiring Team,'}`,
+    confident: 'Dear Hiring Manager,',
   }
 
   const openers = {
     formal:
-      `I am writing to express my strong interest in the ${jobTitle} position at ${companyName}. Having followed ${companyName}'s work closely, I am confident that my background makes me an excellent candidate for this opportunity.`,
+      `I am writing to express my sincere interest in the ${jobTitle} position at ${companyName}. Having followed ${companyName}'s work with great admiration, I believe my background, skills and professional values make me a strong fit for this opportunity and for the wider team.`,
     friendly:
-      `I'm really excited to apply for the ${jobTitle} role at ${companyName} — it looks like a fantastic fit for where I'm headed in my career, and the work you're doing genuinely resonates with me.`,
+      `I'm genuinely excited to throw my hat in the ring for the ${jobTitle} role at ${companyName}. The work you're doing really resonates with me, and from everything I've seen, it looks like exactly the kind of environment where I'd thrive and grow.`,
     confident:
-      `I am applying for the ${jobTitle} position at ${companyName} and I am certain I can make an immediate, measurable impact on your team. My track record speaks for itself, and I'd love the opportunity to bring that energy to ${companyName}.`,
+      `I am applying for the ${jobTitle} position at ${companyName} with full confidence that I will make an immediate and measurable impact on your team. My record of delivering results — consistently and at pace — is exactly what ${companyName} needs at this stage of its growth.`,
   }
 
   const expLines = {
     formal:
-      yearsExp > 0
-        ? `With ${yearsExp}+ year${yearsExp > 1 ? 's' : ''} of experience${latestRole ? ` as ${latestRole}${latestCompany ? ` at ${latestCompany}` : ''}` : ''}, I have built a strong foundation across the key skills this role demands.`
-        : '',
+      hasExp
+        ? `With ${expYrs} of professional experience${latestRole ? ` — most recently serving as ${latestRole}${latestCompany ? ` at ${latestCompany}` : ''}` : ''} — I have developed a rigorous approach to problem-solving and a deep familiarity with the demands this role requires. Throughout my career I have worked across cross-functional teams, contributed to high-stakes projects, and consistently met or exceeded the expectations set for me.`
+        : `I am eager to bring my focused academic background and project experience to a professional setting, and I am confident that the energy and dedication I would bring to ${companyName} more than compensates for the early stage of my career.`,
     friendly:
-      yearsExp > 0
-        ? `I've spent ${yearsExp}+ year${yearsExp > 1 ? 's' : ''} in this space${latestRole ? `, most recently as ${latestRole}${latestCompany ? ` at ${latestCompany}` : ''}` : ''}, and I've learnt a huge amount along the way.`
-        : '',
+      hasExp
+        ? `I've spent ${expYrs} in this field${latestRole ? `, most recently as ${latestRole}${latestCompany ? ` at ${latestCompany}` : ''}` : ''}, and honestly it's been a really rewarding journey. I've had the chance to work on challenging problems alongside talented people, and every experience has sharpened my skills and given me a clearer sense of where I can add the most value.`
+        : `I'm early in my career, but I've already had hands-on experience through projects and internships that have given me a strong foundation and real enthusiasm for this kind of work.`,
     confident:
-      yearsExp > 0
-        ? `Over ${yearsExp}+ year${yearsExp > 1 ? 's' : ''} in the field${latestRole ? ` — including my most recent role as ${latestRole}${latestCompany ? ` at ${latestCompany}` : ''}` : ''} — I have consistently delivered results that exceed expectations.`
-        : '',
+      hasExp
+        ? `Over ${expYrs} in the industry${latestRole ? ` — including as ${latestRole}${latestCompany ? ` at ${latestCompany}` : ''}` : ''} — I have built a track record of stepping into complex situations and driving them to successful outcomes. I thrive in high-expectation environments, and I have repeatedly demonstrated the ability to lead, execute and deliver where it counts most.`
+        : `My academic performance, independent projects and internship experience have positioned me well above the typical entry-level candidate. I do not wait for opportunities — I create them.`,
   }
 
   const strengthsLines = {
     formal:
       strengths.length > 0
-        ? `I bring particular expertise in ${strengths.join(', ')}, and I am confident these capabilities would enable me to make an immediate contribution to your team.`
-        : '',
+        ? `The skills I would bring to this position include ${strengths.join(', ')}. I am confident that this combination of capabilities would allow me to add value to your team from the outset, and to grow meaningfully in the role over time.`
+        : `I am a fast learner who takes pride in delivering thorough, high-quality work. I am equally comfortable operating independently and contributing as part of a collaborative team.`,
     friendly:
       strengths.length > 0
-        ? `I'm especially strong in ${strengths.join(', ')}, and I think those strengths would make me genuinely useful to your team from day one.`
-        : '',
+        ? `My strongest areas are ${strengths.join(', ')} — and from what I've read about the role, those are exactly the things that would make a real difference here. I'm also someone who picks up new tools and workflows quickly, so I'd get up to speed fast.`
+        : `I'm a quick learner, a strong communicator, and someone who genuinely cares about doing good work. I tend to bring a lot of energy and follow-through to whatever I work on.`,
     confident:
       strengths.length > 0
-        ? `My core strengths — ${strengths.join(', ')} — are directly aligned with what this role requires. I don't just bring skills; I bring results.`
-        : '',
+        ? `My core strengths — ${strengths.join(', ')} — are precisely aligned with what this role demands. These are not soft claims; they are capabilities I have demonstrated under real pressure, with real results to show for them.`
+        : `I bring exceptional drive, clear communication and a relentless bias for action. I do not just meet expectations — I redefine them.`,
+  }
+
+  const whyLines = {
+    formal:
+      `I have researched ${companyName} in depth and I am particularly drawn to your reputation for excellence, your values-driven culture, and the calibre of the team you have built. I would consider it a privilege to contribute to your continued success.`,
+    friendly:
+      `What really draws me to ${companyName} is the culture and the people. From everything I've read and heard, it's a place that takes both its work and its people seriously — and that's exactly where I want to build the next chapter of my career.`,
+    confident:
+      `${companyName} is exactly the kind of organisation where I want to make my mark. The ambition, the pace, and the calibre of people here match the professional environment in which I do my best work.`,
   }
 
   const closings = {
     formal:
-      `I would welcome the opportunity to discuss how my background aligns with your requirements. Thank you for considering my application — I look forward to hearing from you.`,
+      `I would welcome the opportunity to discuss my application in more detail at your convenience. I have enclosed my CV for your consideration and I am available for interview at any time. Thank you sincerely for considering my application — I look forward to the possibility of working together.`,
     friendly:
-      `I'd love to chat more about the role and how I can contribute. Thanks so much for taking the time to read this — I really hope we get to connect!`,
+      `I'd love to have a conversation about the role and how I can contribute. I've attached my CV and I'm happy to provide any additional information you need. Thanks so much for taking the time to read this — I really hope we get to connect!`,
     confident:
-      `I would welcome a conversation to discuss how I can drive results for ${companyName}. I am available at your earliest convenience and look forward to speaking with you.`,
+      `I would welcome a direct conversation about how I can contribute to ${companyName}'s goals. I am available at your earliest convenience and ready to hit the ground running. I look forward to speaking with you.`,
   }
 
   const signOffs = {
     formal:    'Yours sincerely,',
-    friendly:  'Best regards,',
+    friendly:  'Best wishes,',
     confident: 'Kind regards,',
   }
 
@@ -75,6 +86,7 @@ function generateLetter({ name, email, phone, location, targetJob, company, stre
     opener:        openers[tone],
     expLine:       expLines[tone],
     strengthsLine: strengthsLines[tone],
+    whyLine:       whyLines[tone],
     closing:       closings[tone],
     sign:          signOffs[tone],
     name,
@@ -85,7 +97,7 @@ function generateLetter({ name, email, phone, location, targetJob, company, stre
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function wordCount(letter) {
-  const parts = [letter.opener, letter.expLine, letter.strengthsLine, letter.closing].filter(Boolean)
+  const parts = [letter.opener, letter.expLine, letter.strengthsLine, letter.whyLine, letter.closing].filter(Boolean)
   return parts.join(' ').split(/\s+/).filter(Boolean).length
 }
 
@@ -204,6 +216,7 @@ export default function CoverLetter() {
       letter.opener,
       letter.expLine,
       letter.strengthsLine,
+      letter.whyLine,
       letter.closing,
       '',
       letter.sign,
@@ -560,7 +573,7 @@ export default function CoverLetter() {
                   <p style={{ fontSize: '13px', color: activeStyle.previewStyle.dark ? '#e2e8f0' : '#374151', marginBottom: '14px' }}>{letter.greeting}</p>
 
                   {/* Body paragraphs */}
-                  {[letter.opener, letter.expLine, letter.strengthsLine, letter.closing].filter(Boolean).map((para, i) => (
+                  {[letter.opener, letter.expLine, letter.strengthsLine, letter.whyLine, letter.closing].filter(Boolean).map((para, i) => (
                     <p key={i} style={{ fontSize: '13px', lineHeight: '1.7', color: activeStyle.previewStyle.dark ? '#cbd5e1' : '#374151', marginBottom: '14px' }}>{para}</p>
                   ))}
 

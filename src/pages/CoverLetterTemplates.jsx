@@ -2,37 +2,37 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react'
 
-// ── 10 Cover Letter Templates ─────────────────────────────────────────────────
+// ── Cover Letter Templates — formal professional palette only ──────────────────
 
 export const COVER_LETTER_TEMPLATES = [
   {
     id: 'classic',
     name: 'Classic',
-    desc: 'Clean white background with serif typography. The timeless choice for any industry.',
+    desc: 'Clean white background with navy header and serif typography. The timeless, universally accepted choice for any industry.',
     badge: 'Most Popular',
-    badgeColor: 'bg-amber-100 text-amber-700',
+    badgeColor: 'bg-blue-100 text-blue-700',
     accent: '#1a2744',
     bg: '#ffffff',
     font: 'Georgia, serif',
-    categories: ['professional','simple'],
+    categories: ['professional', 'simple'],
     previewStyle: { headerBg: '#1a2744', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#1a2744' },
   },
   {
     id: 'modern',
     name: 'Modern',
-    desc: 'Navy left accent bar with bold name header. Clean sans-serif layout for contemporary roles.',
+    desc: 'Navy left accent bar with a bold name header. Clean sans-serif layout for contemporary roles and tech companies.',
     badge: '',
     badgeColor: '',
     accent: '#1a2744',
     bg: '#f8fafc',
     font: 'Inter, sans-serif',
-    categories: ['modern','professional'],
+    categories: ['modern', 'professional'],
     previewStyle: { headerBg: '#f8fafc', headerText: '#1a2744', bodyBg: '#f8fafc', accentLine: '#1a2744', leftBar: true },
   },
   {
     id: 'professional',
     name: 'Professional',
-    desc: 'Double-column header with contact sidebar. Structured, formal and highly ATS-friendly.',
+    desc: 'Strong corporate blue header with a structured two-line contact row. Highly ATS-friendly and HR-approved.',
     badge: 'ATS Friendly',
     badgeColor: 'bg-green-100 text-green-700',
     accent: '#1e3a5f',
@@ -42,88 +42,64 @@ export const COVER_LETTER_TEMPLATES = [
     previewStyle: { headerBg: '#1e3a5f', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#1e3a5f' },
   },
   {
-    id: 'creative',
-    name: 'Creative',
-    desc: 'Bold purple gradient header with a modern sidebar. Perfect for designers and marketers.',
-    badge: '',
-    badgeColor: '',
-    accent: '#7c3aed',
-    bg: '#ffffff',
-    font: 'Inter, sans-serif',
-    categories: ['creative'],
-    previewStyle: { headerBg: '#7c3aed', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#7c3aed' },
-  },
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    desc: 'Ultra-clean layout with generous whitespace and light grey dividers. Let the words shine.',
-    badge: '',
-    badgeColor: '',
-    accent: '#374151',
-    bg: '#ffffff',
-    font: 'Inter, sans-serif',
-    categories: ['simple','modern'],
-    previewStyle: { headerBg: '#ffffff', headerText: '#111827', bodyBg: '#ffffff', accentLine: '#e5e7eb', minimal: true },
-  },
-  {
     id: 'executive',
     name: 'Executive',
-    desc: 'Premium dark navy header with gold accent line. Designed for senior and leadership roles.',
-    badge: 'Premium',
+    desc: 'Premium dark midnight header with a gold accent rule. Crafted for senior leadership, C-suite and consulting applications.',
+    badge: 'Senior Roles',
     badgeColor: 'bg-yellow-100 text-yellow-700',
     accent: '#f0a04b',
     bg: '#ffffff',
     font: 'Georgia, serif',
-    categories: ['professional','executive'],
+    categories: ['professional', 'executive'],
     previewStyle: { headerBg: '#0f1c38', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#f0a04b', goldBar: true },
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    desc: 'Ultra-clean layout with generous whitespace and a single grey rule. The content does the talking.',
+    badge: 'Clean',
+    badgeColor: 'bg-gray-100 text-gray-600',
+    accent: '#374151',
+    bg: '#ffffff',
+    font: 'Inter, sans-serif',
+    categories: ['simple', 'modern'],
+    previewStyle: { headerBg: '#ffffff', headerText: '#111827', bodyBg: '#ffffff', accentLine: '#e5e7eb', minimal: true },
   },
   {
     id: 'elegant',
     name: 'Elegant',
-    desc: 'Rose serif styling with italic accents. Sophisticated and memorable for creative industries.',
+    desc: 'Centred serif header with an italic name and a fine decorative rule. Sophisticated, memorable, and ideal for creative industries.',
     badge: '',
     badgeColor: '',
-    accent: '#8b1a2e',
+    accent: '#1a2744',
     bg: '#ffffff',
     font: 'Georgia, serif',
-    categories: ['creative','simple'],
-    previewStyle: { headerBg: '#ffffff', headerText: '#8b1a2e', bodyBg: '#ffffff', accentLine: '#8b1a2e', elegant: true },
+    categories: ['professional', 'simple'],
+    previewStyle: { headerBg: '#ffffff', headerText: '#1a2744', bodyBg: '#ffffff', accentLine: '#1a2744', elegant: true },
   },
   {
-    id: 'tech',
-    name: 'Tech',
-    desc: 'Dark background with monospaced accents. Built for software engineers and tech roles.',
-    badge: 'For Devs',
-    badgeColor: 'bg-violet-100 text-violet-700',
-    accent: '#6d28d9',
-    bg: '#0f172a',
-    font: 'monospace',
-    categories: ['modern','creative'],
-    previewStyle: { headerBg: '#0f172a', headerText: '#e2e8f0', bodyBg: '#0f172a', accentLine: '#6d28d9', dark: true },
-  },
-  {
-    id: 'coral',
-    name: 'Coral',
-    desc: 'Warm coral gradient header with a friendly, approachable style. Great for startups.',
+    id: 'corporate',
+    name: 'Corporate',
+    desc: 'Bold steel-blue full-width header with white text and a bottom accent strip. Signals authority and corporate polish.',
     badge: '',
     badgeColor: '',
-    accent: '#e85d4a',
+    accent: '#0369a1',
     bg: '#ffffff',
     font: 'Inter, sans-serif',
-    categories: ['modern','creative'],
-    previewStyle: { headerBg: '#e85d4a', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#e85d4a' },
+    categories: ['professional', 'modern'],
+    previewStyle: { headerBg: '#0369a1', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#0369a1', corporate: true },
   },
   {
-    id: 'amber',
-    name: 'Amber',
-    desc: 'Warm golden header with a confident, energetic feel. Stand out in competitive industries.',
+    id: 'academic',
+    name: 'Academic',
+    desc: 'Traditional single-column layout with a centred black heading and subtle divider. Perfect for research, education and government applications.',
     badge: '',
     badgeColor: '',
-    accent: '#d97706',
+    accent: '#111827',
     bg: '#ffffff',
-    font: 'Inter, sans-serif',
-    categories: ['modern','professional'],
-    previewStyle: { headerBg: '#d97706', headerText: '#ffffff', bodyBg: '#ffffff', accentLine: '#d97706' },
+    font: 'Georgia, serif',
+    categories: ['professional', 'simple', 'executive'],
+    previewStyle: { headerBg: '#ffffff', headerText: '#111827', bodyBg: '#ffffff', accentLine: '#111827', academic: true },
   },
 ]
 
@@ -131,61 +107,93 @@ const FILTERS = [
   { key: 'all',          label: 'All',          count: COVER_LETTER_TEMPLATES.length },
   { key: 'professional', label: 'Professional', count: COVER_LETTER_TEMPLATES.filter(t => t.categories.includes('professional')).length },
   { key: 'modern',       label: 'Modern',       count: COVER_LETTER_TEMPLATES.filter(t => t.categories.includes('modern')).length },
-  { key: 'creative',     label: 'Creative',     count: COVER_LETTER_TEMPLATES.filter(t => t.categories.includes('creative')).length },
   { key: 'simple',       label: 'Simple',       count: COVER_LETTER_TEMPLATES.filter(t => t.categories.includes('simple')).length },
   { key: 'executive',    label: 'Executive',    count: COVER_LETTER_TEMPLATES.filter(t => t.categories.includes('executive')).length },
 ]
 
-// ── Cover Letter Preview Card ─────────────────────────────────────────────────
+// ── Cover Letter Preview Card — realistic letter layout ───────────────────────
 
 function CLPreviewCard({ template }) {
-  const ps = template.previewStyle
-  const isDark = !!ps.dark
+  const ps    = template.previewStyle
+  const col   = ps.accentLine || template.accent
+  const body  = ps.bodyBg || '#ffffff'
+  const lineC = '#dde1e7'
+
+  // Row of text lines simulating a paragraph
+  const Para = ({ widths }) => (
+    <div style={{ marginBottom: '6px' }}>
+      {widths.map((w, i) => (
+        <div key={i} style={{ height: '3.5px', backgroundColor: lineC, width: `${w}%`, borderRadius: '1px', marginBottom: '2.5px' }} />
+      ))}
+    </div>
+  )
 
   return (
-    <div className="w-full h-full rounded-lg overflow-hidden shadow-inner" style={{ backgroundColor: ps.bodyBg, fontFamily: template.font }}>
-      {/* Header area */}
-      <div className="px-5 py-4" style={{ backgroundColor: ps.headerBg }}>
-        {ps.goldBar && <div className="h-0.5 bg-[#f0a04b] mb-3 w-12" />}
-        {ps.elegant && <div className="text-center">
-          <p className="text-sm italic font-bold" style={{ color: ps.headerText, fontFamily: 'Georgia, serif' }}>Olivia Johnson</p>
-          <p className="text-xs mt-0.5" style={{ color: ps.headerText, opacity: 0.7 }}>olivia@email.com · +91 98765 43210</p>
-        </div>}
-        {!ps.elegant && !ps.minimal && (
-          <div className={ps.leftBar ? 'flex gap-3' : ''}>
-            {ps.leftBar && <div className="w-1 rounded-full flex-shrink-0" style={{ backgroundColor: ps.accentLine }} />}
-            <div>
-              <p className={`font-bold ${ps.leftBar ? 'text-base' : 'text-lg'}`} style={{ color: ps.headerText, fontFamily: template.font }}>
-                Olivia Johnson
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: isDark ? '#94a3b8' : ps.headerBg === ps.bodyBg ? '#6b7280' : 'rgba(255,255,255,0.75)' }}>
-                olivia@email.com · +91 98765 43210
-              </p>
-            </div>
-          </div>
-        )}
-        {ps.minimal && (
+    <div style={{ backgroundColor: body, fontFamily: template.font, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontSize: '7px' }}>
+
+      {/* ── Header ── */}
+      {ps.academic ? (
+        // Academic: centred black heading, divider
+        <div style={{ padding: '10px 12px 6px', borderBottom: `1.5px solid ${col}`, textAlign: 'center' }}>
+          <div style={{ fontSize: '8.5px', fontWeight: 700, color: '#111827', letterSpacing: '0.3px' }}>OLIVIA JOHNSON</div>
+          <div style={{ fontSize: '5px', color: '#6b7280', marginTop: '2px' }}>olivia@email.com · +91 98765 43210</div>
+        </div>
+      ) : ps.elegant ? (
+        // Elegant: centred italic name
+        <div style={{ padding: '10px 12px 8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '9px', fontWeight: 700, fontStyle: 'italic', color: col }}>Olivia Johnson</div>
+          <div style={{ fontSize: '5px', color: '#9ca3af', marginTop: '2px' }}>olivia@email.com · +91 98765 43210</div>
+          <div style={{ height: '1px', backgroundColor: col, width: '28px', margin: '5px auto 0', opacity: 0.35 }} />
+        </div>
+      ) : ps.minimal ? (
+        // Minimal: plain name + rule
+        <div style={{ padding: '10px 12px 0' }}>
+          <div style={{ fontSize: '9px', fontWeight: 700, color: '#111827' }}>Olivia Johnson</div>
+          <div style={{ fontSize: '5px', color: '#9ca3af', marginTop: '2px' }}>olivia@email.com · +91 98765 43210</div>
+          <div style={{ height: '1px', backgroundColor: '#d1d5db', marginTop: '6px' }} />
+        </div>
+      ) : ps.leftBar ? (
+        // Modern: left accent bar
+        <div style={{ padding: '10px 12px 8px', display: 'flex', gap: '6px', alignItems: 'stretch', backgroundColor: body }}>
+          <div style={{ width: '2.5px', backgroundColor: col, borderRadius: '1px', flexShrink: 0 }} />
           <div>
-            <p className="text-base font-bold text-gray-900">Olivia Johnson</p>
-            <div className="h-px mt-2" style={{ backgroundColor: ps.accentLine }} />
+            <div style={{ fontSize: '9px', fontWeight: 700, color: col }}>Olivia Johnson</div>
+            <div style={{ fontSize: '5px', color: '#9ca3af', marginTop: '2px' }}>olivia@email.com · +91 98765 43210</div>
           </div>
-        )}
-      </div>
-      {/* Body */}
-      <div className="px-5 py-3 space-y-2">
-        <div className="h-2 rounded" style={{ backgroundColor: isDark ? '#334155' : '#e5e7eb', width: '40%' }} />
-        <div className="h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '100%' }} />
-        <div className="h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '92%' }} />
-        <div className="h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '97%' }} />
-        <div className="h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '85%' }} />
-        <div className="mt-2 h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '98%' }} />
-        <div className="h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '90%' }} />
-        <div className="h-1.5 rounded" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '75%' }} />
-      </div>
-      {/* Footer / sign-off */}
-      <div className="px-5 py-3">
-        <div className="h-1.5 rounded mb-1.5" style={{ backgroundColor: isDark ? '#1e293b' : '#f3f4f6', width: '35%' }} />
-        <div className="h-2 rounded font-bold" style={{ backgroundColor: isDark ? '#334155' : ps.accentLine === '#e5e7eb' ? '#d1d5db' : ps.accentLine, opacity: 0.4, width: '45%' }} />
+        </div>
+      ) : ps.goldBar ? (
+        // Executive: dark header + gold rule
+        <div style={{ backgroundColor: ps.headerBg, padding: '9px 12px 8px' }}>
+          <div style={{ height: '2px', backgroundColor: '#f0a04b', width: '18px', borderRadius: '1px', marginBottom: '5px' }} />
+          <div style={{ fontSize: '9px', fontWeight: 700, color: '#ffffff' }}>Olivia Johnson</div>
+          <div style={{ fontSize: '5px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>olivia@email.com · +91 98765 43210</div>
+        </div>
+      ) : (
+        // Default: solid colour header (classic, professional, corporate)
+        <div style={{ backgroundColor: ps.headerBg, padding: '10px 12px 8px' }}>
+          <div style={{ fontSize: '9px', fontWeight: 700, color: ps.headerText || '#ffffff' }}>Olivia Johnson</div>
+          <div style={{ fontSize: '5px', color: 'rgba(255,255,255,0.65)', marginTop: '2px' }}>olivia@email.com · +91 98765 43210</div>
+          {ps.corporate && <div style={{ height: '1.5px', backgroundColor: 'rgba(255,255,255,0.25)', marginTop: '6px' }} />}
+        </div>
+      )}
+
+      {/* ── Letter body ── */}
+      <div style={{ flex: 1, padding: '7px 12px 6px' }}>
+        {/* Date line */}
+        <div style={{ height: '3px', backgroundColor: '#e5e7eb', width: '28%', borderRadius: '1px', marginBottom: '6px' }} />
+        {/* Salutation */}
+        <div style={{ fontSize: '6px', fontWeight: 600, color: '#374151', marginBottom: '5px' }}>Dear Hiring Manager,</div>
+        {/* Opening paragraph */}
+        <Para widths={[100, 96, 98, 92, 100, 68]} />
+        {/* Body paragraph */}
+        <Para widths={[100, 94, 97, 90, 95, 75]} />
+        {/* Short closing paragraph */}
+        <Para widths={[96, 91, 60]} />
+        {/* Sign-off */}
+        <div style={{ marginTop: '6px' }}>
+          <div style={{ fontSize: '5.5px', color: '#6b7280', marginBottom: '3px' }}>Yours sincerely,</div>
+          <div style={{ fontSize: '6.5px', fontWeight: 700, color: '#111827' }}>Olivia Johnson</div>
+        </div>
       </div>
     </div>
   )
